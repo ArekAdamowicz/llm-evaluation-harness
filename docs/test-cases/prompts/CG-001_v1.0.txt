@@ -1,0 +1,8 @@
+Write a Python function named calculate_average(numbers: list[float]) -> float that calculates the arithmetic mean of the numbers in the input list.
+
+Requirements:
+- Return the arithmetic mean as a float.
+- If the input list is empty, raise a ValueError with the exact message: "numbers must not be empty".
+- Do not modify the original input list.
+- Include type annotations.
+- Include a descriptive docstring explaining the function's purpose and behavior.
