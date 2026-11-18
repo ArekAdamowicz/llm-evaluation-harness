@@ -372,12 +372,84 @@ The model MUST NOT be used as the source of truth for its own evaluation.
 
 Floating-point results MUST be compared using an appropriate tolerance rather than strict equality, except where exact equality is explicitly required.
 
-Default tolerance:
+The evaluation framework MUST use `math.isclose()` for numerical comparisons.
+
+**Default tolerance:**
 
 ```python
 rel_tol=1e-9
 abs_tol=1e-12
 ```
+
+Custom tolerances MAY be provided when justified by the test case requirements.
+
+#### Boolean Exclusion
+
+Before performing a numerical comparison, the evaluation framework MUST validate the types of both the actual and expected values.
+
+Boolean values MUST NOT be accepted as valid numerical results, even though Python treats `bool` as a subclass of `int` and allows comparisons such as:
+
+```python
+True == 1.0  # True
+```
+
+The framework MUST explicitly reject Boolean values before performing numerical comparisons:
+
+```python
+if type(actual) is bool:
+    raise AssertionError("Boolean result is not a valid numerical result")
+
+if type(expected) is bool:
+    raise AssertionError("Boolean expected value is not valid")
+```
+
+This validation MUST take place before calling `math.isclose()`.
+
+#### Numerical Type Validation
+
+Both actual and expected values MUST be integers or floating-point numbers, excluding Boolean values.
+
+Values of other types MUST be rejected.
+
+#### Finite Value Validation
+
+Actual and expected numerical values MUST be finite.
+
+The framework MUST reject:
+
+- NaN (`float("nan")`)
+- Positive infinity (`float("inf")`)
+- Negative infinity (`float("-inf")`)
+- Integer values that cannot be represented as finite floating-point numbers during comparison.
+
+#### Tolerance Validation
+
+Both `rel_tol` and `abs_tol` MUST:
+
+- Be integers or floating-point numbers, excluding Boolean values.
+- Be finite.
+- Be non-negative.
+
+The framework MUST reject invalid tolerance types with `TypeError` and negative or non-finite tolerances with `ValueError`.
+
+Zero tolerance values MUST be accepted.
+
+#### Validation Order
+
+The evaluation framework MUST validate inputs in the following order:
+
+1. Validate the actual value.
+2. Validate the expected value.
+3. Validate tolerance types and values.
+4. Perform the numerical comparison using `math.isclose()`.
+
+Invalid inputs MUST be rejected before the numerical comparison is performed.
+
+#### Comparison Failure
+
+If both numerical values and tolerances are valid, but the actual value is not sufficiently close to the expected value, the framework MUST raise `AssertionError`.
+
+The comparison MUST use the configured relative and absolute tolerances.
 
 ### 8.3 Generated Code Evaluation
 
