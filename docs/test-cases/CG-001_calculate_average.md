@@ -20,7 +20,15 @@
   - Shift Invariance.
   - Order Independence.
 
-**Current version:** v1.1
+### v1.2 – Arbitrarily Large Integers and Exact Mean Calculation
+
+- Added support for arbitrarily large Python integers.
+- Clarified that individual integers do not need to be representable as finite floats.
+- Added requirements for exact intermediate arithmetic.
+- Clarified final conversion and overflow behavior.
+- Added validation ordering requirements for element types.
+
+**Current version:** v1.2
 
 ---
 
@@ -146,6 +154,51 @@ numbers = [10**400]
 ```
 
 The function MUST NOT silently return Infinity.
+
+### 3.4 Arbitrarily Large Integer Inputs
+
+Python integers of arbitrary size MUST be accepted as valid input values.
+
+An individual integer MUST NOT be rejected solely because it cannot be represented as a finite Python float.
+
+The implementation MUST calculate the arithmetic mean based on the mathematical values of all input elements.
+
+For floating-point inputs, the calculation MUST respect the actual values represented by the supplied Python floats.
+
+The implementation MUST NOT lose the contribution of large integer values due to premature floating-point conversion or intermediate overflow.
+
+Examples:
+
+```python
+numbers = [10**400, -(10**400), 1]
+result = calculate_average(numbers)
+
+# Expected: approximately 0.3333333333333333
+```
+
+The implementation MUST successfully calculate this result even though the individual integer values cannot be converted to finite Python floats.
+
+Example of an unrepresentable final result:
+
+```python
+numbers = [10**400, 10**400, -(10**400)]
+```
+
+The function MUST raise:
+
+```python
+ValueError("calculation resulted in overflow")
+```
+
+The final mathematical mean MUST be converted to a Python float using standard Python float conversion and rounding behavior.
+
+If the conversion raises OverflowError or produces a non-finite result, the function MUST raise:
+
+```python
+ValueError("calculation resulted in overflow")
+```
+
+The implementation MUST validate the types of all input elements before performing numerical conversion or calculation.
 
 ---
 
@@ -313,9 +366,13 @@ Use a numerically stable summation approach, such as `math.fsum()` or an equival
 
 ### 6.2 Input Validation
 
-Validate the input container and its elements before performing numerical calculations.
+Validate the input container and all element types before performing numerical conversion or calculation.
 
 Boolean values MUST be rejected explicitly.
+
+The implementation MUST complete type validation for all elements before attempting numerical conversion.
+
+This ensures that an invalid element type is not masked by an overflow caused by an earlier valid integer value.
 
 ### 6.3 Special Values
 
@@ -323,9 +380,13 @@ Check for NaN and positive/negative Infinity before calculating the mean.
 
 ### 6.4 Overflow Protection
 
-Distinguish between intermediate summation overflow and an unrepresentable final mean.
+Distinguish between intermediate numerical overflow and an unrepresentable final mean.
 
-A representable final mean MUST be returned even if a naive intermediate summation would overflow.
+A representable final mean MUST be returned even if individual input values or intermediate calculations exceed the representable range of Python float.
+
+Arbitrarily large Python integers MUST be supported.
+
+Only an unrepresentable final mean may cause the overflow ValueError defined in this specification.summation would overflow.
 
 ### 6.5 Immutability
 
@@ -357,6 +418,7 @@ The following categories MUST be covered by the evaluation test suite.
 | Type annotations | Function signature validation |
 | Documentation | Meaningful docstring |
 | Metamorphic testing | Shift invariance and order independence |
+| Arbitrarily large integers | Large integers, cancellation of large integer values, mixed integer and floating-point inputs |
 
 ---
 
@@ -471,10 +533,14 @@ It MUST NOT be executed directly in the main harness process. A restricted execu
 
 ---
 
-## 9. Version 1.1 Scope
+## 9. Version 1.2 Scope
 
-Version 1.1 extends the original CG-001 test case with stronger numerical and input-validation requirements.
+Version 1.2 extends CG-001 with support for arbitrarily large Python integers and stronger numerical correctness requirements.
 
-It does not require a particular implementation strategy.
+The implementation MUST calculate the mathematical mean without rejecting valid integer inputs solely because individual values cannot be represented as finite Python floats.
 
-The objective is to evaluate whether an LLM can generate code that satisfies a clearly defined functional contract, including challenging edge cases and mathematical properties.
+The final result MUST be converted to a finite Python float. An unrepresentable final result MUST raise the specified overflow ValueError.
+
+Version 1.2 does not require a particular implementation strategy.
+
+The objective is to evaluate whether an LLM can generate code that satisfies the complete functional contract, including input validation, numerical stability, large integer handling, and mathematical properties.

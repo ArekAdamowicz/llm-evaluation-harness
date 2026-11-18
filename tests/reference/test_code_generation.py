@@ -59,6 +59,7 @@ def test_calculate_average_does_not_modify_input_list_when_exception_is_raised()
 
     assert numbers == original_numbers
 
+
 def test_calculate_average_does_not_modify_input_list_when_validation_fails():
     numbers = [1.0, "2.0", 3.0]
     original_numbers = deepcopy(numbers)
@@ -66,7 +67,7 @@ def test_calculate_average_does_not_modify_input_list_when_validation_fails():
     with pytest.raises(TypeError):
         calculate_average(numbers)
 
-    assert numbers == original_numbers    
+    assert numbers == original_numbers
 
 
 def test_calculate_average_has_expected_type_annotations():
@@ -169,6 +170,7 @@ def test_calculate_average_handles_floating_point_precision():
 
     assert_numeric_close(result, 1 / 3)
 
+
 def test_calculate_average_preserves_small_values_with_large_cancellation():
     numbers = [1e308, -1e308, 1e-300]
     expected = 1e-300 / 3
@@ -180,6 +182,7 @@ def test_calculate_average_preserves_small_values_with_large_cancellation():
         expected,
         abs_tol=0.0,
     )
+
 
 # ============================================================
 # CG-001 v1.1: Overflow protection
@@ -221,6 +224,7 @@ def test_calculate_average_is_order_independent():
 
     assert_numeric_close(result_original, result_reversed)
 
+
 def test_calculate_average_obeys_shift_invariance():
     numbers = [1.25, 2.5, 4.75]
     shift = 1000.0
@@ -234,3 +238,54 @@ def test_calculate_average_obeys_shift_invariance():
         shifted_average,
         original_average + shift,
     )
+
+
+# ============================================================
+# CG-001 v1.2: Arbitrarily large integer inputs
+# ============================================================
+
+def test_calculate_average_handles_large_integer_cancellation():
+    numbers = [10**400, -(10**400), 1]
+
+    result = calculate_average(numbers)
+
+    assert_numeric_close(result, 1 / 3)
+
+
+def test_calculate_average_handles_large_integer_cancellation_with_float():
+    numbers = [10**400, -(10**400), 0.5]
+
+    result = calculate_average(numbers)
+
+    assert_numeric_close(result, 0.5 / 3)
+
+
+def test_calculate_average_handles_large_integer_cancellation_independently_of_order():
+    numbers = [10**400, 1, -(10**400)]
+    reversed_numbers = list(reversed(numbers))
+
+    result_original = calculate_average(numbers)
+    result_reversed = calculate_average(reversed_numbers)
+
+    assert_numeric_close(result_original, 1 / 3)
+    assert_numeric_close(result_reversed, 1 / 3)
+
+
+def test_calculate_average_validates_all_element_types_before_numeric_conversion():
+    numbers = [10**400, "invalid"]
+
+    with pytest.raises(TypeError) as exc_info:
+        calculate_average(numbers)
+
+    assert str(exc_info.value) == (
+        "all elements must be int or float, excluding bool"
+    )
+
+
+def test_calculate_average_rejects_unrepresentable_mean_after_large_integer_cancellation():
+    numbers = [10**400, 10**400, -(10**400)]
+
+    with pytest.raises(ValueError) as exc_info:
+        calculate_average(numbers)
+
+    assert str(exc_info.value) == "calculation resulted in overflow"
