@@ -1,0 +1,19 @@
+Write a Python function named calculate_average(numbers: list[float]) -> float that calculates the arithmetic mean of the numbers in the input list.
+
+Requirements:
+- Accept a non-empty Python list containing integers or floating-point numbers.
+- Return the arithmetic mean as a finite Python float.
+- If the input is not a list, raise a TypeError with the exact message: "numbers must be a list".
+- If the input list is empty, raise a ValueError with the exact message: "numbers must not be empty".
+- Reject unsupported element types, including strings, None, and Boolean values. Raise a TypeError with the exact message: "all elements must be int or float, excluding bool".
+- Reject NaN values with a ValueError and the exact message: "numbers must not contain NaN values".
+- Reject positive and negative Infinity values with a ValueError and the exact message: "numbers must not contain infinite values".
+- Calculate the arithmetic mean accurately, including cases involving floating-point cancellation and very large values.
+- Do not raise an overflow error merely because an intermediate sum exceeds the floating-point range if the final mean is representable as a finite float.
+- If the final mean cannot be represented as a finite float, raise a ValueError with the exact message: "calculation resulted in overflow".
+- The result must be independent of the order of valid input elements, within normal floating-point tolerance.
+- Adding a constant to every input element must increase the calculated mean by that constant, within normal floating-point tolerance.
+- Do not modify the original input list.
+- Include type annotations.
+- Include a descriptive docstring explaining the function's purpose, accepted inputs, return value, and possible exceptions.
+- The implementation must satisfy all requirements without relying on a specific numerical summation algorithm.

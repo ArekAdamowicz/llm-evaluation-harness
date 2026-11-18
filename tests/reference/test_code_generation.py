@@ -1,10 +1,10 @@
-
 import math
 from copy import deepcopy
 from inspect import signature
 
 import pytest
 
+from llm_eval.evaluation.comparisons import assert_numeric_close
 from llm_eval.reference.code_generation import calculate_average
 
 
@@ -30,7 +30,7 @@ def test_calculate_average_returns_correct_mean(numbers, expected):
     result = calculate_average(numbers)
 
     assert type(result) is float
-    assert math.isclose(result, expected, rel_tol=1e-9, abs_tol=1e-12)
+    assert_numeric_close(result, expected)
 
 
 def test_calculate_average_raises_value_error_for_empty_list():
@@ -167,7 +167,7 @@ def test_calculate_average_handles_floating_point_precision():
 
     result = calculate_average(numbers)
 
-    assert math.isclose(result, 1 / 3, rel_tol=1e-9, abs_tol=1e-12)
+    assert_numeric_close(result, 1 / 3)
 
 def test_calculate_average_preserves_small_values_with_large_cancellation():
     numbers = [1e308, -1e308, 1e-300]
@@ -175,10 +175,9 @@ def test_calculate_average_preserves_small_values_with_large_cancellation():
 
     result = calculate_average(numbers)
 
-    assert math.isclose(
+    assert_numeric_close(
         result,
         expected,
-        rel_tol=1e-9,
         abs_tol=0.0,
     )
 
@@ -220,13 +219,7 @@ def test_calculate_average_is_order_independent():
     result_original = calculate_average(numbers)
     result_reversed = calculate_average(reversed_numbers)
 
-    assert math.isclose(
-        result_original,
-        result_reversed,
-        rel_tol=1e-9,
-        abs_tol=1e-12,
-    )
-
+    assert_numeric_close(result_original, result_reversed)
 
 def test_calculate_average_obeys_shift_invariance():
     numbers = [1.25, 2.5, 4.75]
@@ -237,9 +230,7 @@ def test_calculate_average_obeys_shift_invariance():
         [number + shift for number in numbers]
     )
 
-    assert math.isclose(
+    assert_numeric_close(
         shifted_average,
         original_average + shift,
-        rel_tol=1e-9,
-        abs_tol=1e-12,
     )
