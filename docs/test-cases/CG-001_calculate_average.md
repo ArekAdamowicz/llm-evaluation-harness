@@ -386,7 +386,7 @@ A representable final mean MUST be returned even if individual input values or i
 
 Arbitrarily large Python integers MUST be supported.
 
-Only an unrepresentable final mean may cause the overflow ValueError defined in this specification.summation would overflow.
+Only an unrepresentable final mean may cause the overflow ValueError defined in this specification.
 
 ### 6.5 Immutability
 

@@ -2,7 +2,6 @@ import argparse
 import hashlib
 from pathlib import Path
 
-
 PROMPTS = {
     "1.0": (
         "Write a Python function named calculate_average(numbers: list[float]) -> float "

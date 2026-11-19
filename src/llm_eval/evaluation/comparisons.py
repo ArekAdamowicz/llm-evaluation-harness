@@ -2,8 +2,8 @@ import math
 
 
 def assert_numeric_close(
-    actual: int | float,
-    expected: int | float,
+    actual: float,
+    expected: float,
     *,
     rel_tol: float = 1e-9,
     abs_tol: float = 1e-12,

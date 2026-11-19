@@ -7,7 +7,6 @@ import pytest
 from llm_eval.evaluation.comparisons import assert_numeric_close
 from llm_eval.reference.code_generation import calculate_average
 
-
 # ============================================================
 # CG-001 v1.0: Basic functional tests
 # ============================================================
