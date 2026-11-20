@@ -88,10 +88,7 @@ class TestRealSyntaxErrors:
         """The unclosed bracket and EOF are both on line 2, so the reported
         line number is unambiguous regardless of CPython's convention.
         """
-        code = (
-            "def calculate_average(numbers):\n"
-            "    return sum(numbers) / len(numbers"
-        )
+        code = "def calculate_average(numbers):\n    return sum(numbers) / len(numbers"
         result = check_syntax(code)
 
         assert result is not None
@@ -101,11 +98,7 @@ class TestRealSyntaxErrors:
         assert result["message"]
 
     def test_missing_colon_reports_offending_line(self):
-        code = (
-            "import math\n"
-            "def calculate_average(numbers)\n"
-            "    return 0.0\n"
-        )
+        code = "import math\ndef calculate_average(numbers)\n    return 0.0\n"
         result = check_syntax(code)
 
         assert result is not None
@@ -251,11 +244,7 @@ class TestNoExecution:
         assert check_syntax(code) is None
 
     def test_module_level_zero_division_is_not_triggered(self):
-        code = (
-            "value = 1 / 0\n"
-            "def calculate_average(numbers):\n"
-            "    return 0.0"
-        )
+        code = "value = 1 / 0\ndef calculate_average(numbers):\n    return 0.0"
         assert check_syntax(code) is None
 
 

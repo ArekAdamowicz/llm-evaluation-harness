@@ -30,9 +30,7 @@ def calculate_average(numbers: list[float]) -> float:
     # Validate all element types before numerical conversion.
     for value in numbers:
         if isinstance(value, bool) or not isinstance(value, (int, float)):
-            raise TypeError(
-                "all elements must be int or float, excluding bool"
-            )
+            raise TypeError("all elements must be int or float, excluding bool")
 
     # Validate special floating-point values.
     for value in numbers:
@@ -41,9 +39,7 @@ def calculate_average(numbers: list[float]) -> float:
                 raise ValueError("numbers must not contain NaN values")
 
             if math.isinf(value):
-                raise ValueError(
-                    "numbers must not contain infinite values"
-                )
+                raise ValueError("numbers must not contain infinite values")
 
     # Convert values to exact rational representations.
     exact_numbers = [Fraction(value) for value in numbers]

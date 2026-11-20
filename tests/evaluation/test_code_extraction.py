@@ -31,14 +31,12 @@ VALID_CODE = (
 
 USAGE_ONLY_CODE = "result = calculate_average([1.0, 2.0, 3.0])\nprint(result)"
 
-OTHER_FUNCTION_CODE = (
-    "def compute_mean(values):\n"
-    "    return sum(values) / len(values)"
-)
+OTHER_FUNCTION_CODE = "def compute_mean(values):\n    return sum(values) / len(values)"
 
 
 def fence(code: str, language: str = "python") -> str:
     return f"```{language}\n{code}\n```"
+
 
 class TestHappyPath:
     def test_extracts_python_code_block(self):
@@ -62,10 +60,7 @@ class TestHappyPath:
         assert result["code"] == VALID_CODE
 
     def test_extracts_function_from_second_block(self):
-        raw = (
-            f"{fence(USAGE_ONLY_CODE)}\n\n"
-            f"{fence(VALID_CODE)}"
-        )
+        raw = f"{fence(USAGE_ONLY_CODE)}\n\n{fence(VALID_CODE)}"
 
         result = extract_code_block(raw)
 
@@ -101,10 +96,7 @@ class TestHappyPath:
 class TestBlockSelection:
     def test_uses_first_matching_block(self):
         first = VALID_CODE
-        second = (
-            "def calculate_average(numbers):\n"
-            "    return 100.0"
-        )
+        second = "def calculate_average(numbers):\n    return 100.0"
 
         raw = f"{fence(first)}\n\n{fence(second)}"
 
@@ -119,9 +111,7 @@ class TestBlockSelection:
         second = "def calculate_average(numbers):\n    return 2.0"
         third = "def calculate_average(numbers):\n    return 3.0"
 
-        raw = "\n\n".join(
-            [fence(first), fence(second), fence(third)]
-        )
+        raw = "\n\n".join([fence(first), fence(second), fence(third)])
 
         result = extract_code_block(raw)
 
@@ -130,10 +120,7 @@ class TestBlockSelection:
         assert result["ambiguous"] is True
 
     def test_does_not_mark_single_candidate_as_ambiguous(self):
-        raw = (
-            f"{fence(USAGE_ONLY_CODE)}\n\n"
-            f"{fence(VALID_CODE)}"
-        )
+        raw = f"{fence(USAGE_ONLY_CODE)}\n\n{fence(VALID_CODE)}"
 
         result = extract_code_block(raw)
 
@@ -141,10 +128,7 @@ class TestBlockSelection:
         assert "ambiguous" not in result
 
     def test_ignores_non_python_block_before_python_block(self):
-        raw = (
-            f"{fence(VALID_CODE, 'javascript')}\n\n"
-            f"{fence(VALID_CODE)}"
-        )
+        raw = f"{fence(VALID_CODE, 'javascript')}\n\n{fence(VALID_CODE)}"
 
         result = extract_code_block(raw)
 
@@ -153,10 +137,7 @@ class TestBlockSelection:
         assert "ambiguous" not in result
 
     def test_ignores_block_without_required_function(self):
-        raw = (
-            f"{fence(OTHER_FUNCTION_CODE)}\n\n"
-            f"{fence(VALID_CODE)}"
-        )
+        raw = f"{fence(OTHER_FUNCTION_CODE)}\n\n{fence(VALID_CODE)}"
 
         result = extract_code_block(raw)
 
@@ -164,10 +145,7 @@ class TestBlockSelection:
         assert result["code"] == VALID_CODE
 
     def test_non_python_matching_block_does_not_create_ambiguity(self):
-        raw = (
-            f"{fence(VALID_CODE, 'javascript')}\n\n"
-            f"{fence(VALID_CODE)}"
-        )
+        raw = f"{fence(VALID_CODE, 'javascript')}\n\n{fence(VALID_CODE)}"
 
         result = extract_code_block(raw)
 
@@ -175,10 +153,7 @@ class TestBlockSelection:
         assert "ambiguous" not in result
 
     def test_unclosed_block_is_not_a_candidate(self):
-        raw = (
-            "```python\n"
-            f"{VALID_CODE}\n"
-        )
+        raw = f"```python\n{VALID_CODE}\n"
 
         assert extract_code_block(raw) is None
 
@@ -188,40 +163,28 @@ class TestFunctionMatching:
         assert extract_code_block(fence(VALID_CODE)) is not None
 
     def test_matches_function_with_leading_indentation(self):
-        code = (
-            "    def calculate_average(numbers):\n"
-            "        return 0.0"
-        )
+        code = "    def calculate_average(numbers):\n        return 0.0"
 
         result = extract_code_block(fence(code))
 
         assert result is not None
 
     def test_matches_whitespace_between_def_and_name(self):
-        code = (
-            "def   calculate_average(numbers):\n"
-            "    return 0.0"
-        )
+        code = "def   calculate_average(numbers):\n    return 0.0"
 
         result = extract_code_block(fence(code))
 
         assert result is not None
 
     def test_matches_whitespace_before_opening_parenthesis(self):
-        code = (
-            "def calculate_average   (numbers):\n"
-            "    return 0.0"
-        )
+        code = "def calculate_average   (numbers):\n    return 0.0"
 
         result = extract_code_block(fence(code))
 
         assert result is not None
 
     def test_does_not_match_similar_function_name(self):
-        code = (
-            "def calculate_average_v2(numbers):\n"
-            "    return 0.0"
-        )
+        code = "def calculate_average_v2(numbers):\n    return 0.0"
 
         assert extract_code_block(fence(code)) is None
 
@@ -297,10 +260,7 @@ class TestLanguageTags:
         assert extract_code_block(raw) is None
 
     def test_untagged_block_does_not_create_ambiguity(self):
-        raw = (
-            f"```\n{VALID_CODE}\n```\n\n"
-            f"{fence(VALID_CODE)}"
-        )
+        raw = f"```\n{VALID_CODE}\n```\n\n{fence(VALID_CODE)}"
 
         result = extract_code_block(raw)
 
@@ -324,24 +284,12 @@ class TestMalformedInput:
         assert extract_code_block(raw) is None
 
     def test_unclosed_fence_can_swallow_next_opening_marker(self):
-        raw = (
-            "```python\n"
-            "some incomplete code\n"
-            "```python\n"
-            f"{VALID_CODE}\n"
-            "```"
-        )
+        raw = f"```python\nsome incomplete code\n```python\n{VALID_CODE}\n```"
 
         assert extract_code_block(raw) is None
 
     def test_next_fence_marker_closes_block_even_with_info_string(self):
-        raw = (
-            "```python\n"
-            f"{VALID_CODE}\n"
-            "```text\n"
-            f"{VALID_CODE}\n"
-            "```"
-        )
+        raw = f"```python\n{VALID_CODE}\n```text\n{VALID_CODE}\n```"
 
         result = extract_code_block(raw)
 
@@ -366,10 +314,7 @@ class TestMalformedInput:
         assert result["code"] == VALID_CODE
 
     def test_ignores_inline_backticks(self):
-        raw = (
-            "The function is `calculate_average(numbers)`.\n"
-            f"{fence(VALID_CODE)}"
-        )
+        raw = f"The function is `calculate_average(numbers)`.\n{fence(VALID_CODE)}"
 
         result = extract_code_block(raw)
 
@@ -379,20 +324,12 @@ class TestMalformedInput:
 
 class TestDedentRule:
     def test_indented_fence_is_dedented(self):
-        raw = (
-            "  ```python\n"
-            "  def calculate_average(numbers):\n"
-            "      return 0.0\n"
-            "  ```"
-        )
+        raw = "  ```python\n  def calculate_average(numbers):\n      return 0.0\n  ```"
 
         result = extract_code_block(raw)
 
         assert result is not None
-        assert result["code"] == (
-            "def calculate_average(numbers):\n"
-            "    return 0.0"
-        )
+        assert result["code"] == ("def calculate_average(numbers):\n    return 0.0")
 
     def test_indented_fence_with_import_is_dedented(self):
         raw = (
@@ -448,61 +385,33 @@ class TestDedentRule:
         result = extract_code_block(raw)
 
         assert result is not None
-        assert result["code"] == (
-            "def calculate_average(numbers):\n"
-            "\n"
-            "    return 0.0"
-        )
+        assert result["code"] == ("def calculate_average(numbers):\n\n    return 0.0")
 
     def test_tabs_are_not_removed(self):
         """Only spaces are stripped; a tab-indented body stays as it was."""
-        raw = (
-            "  ```python\n"
-            "  def calculate_average(numbers):\n"
-            "\treturn 0.0\n"
-            "  ```"
-        )
+        raw = "  ```python\n  def calculate_average(numbers):\n\treturn 0.0\n  ```"
 
         result = extract_code_block(raw)
 
         assert result is not None
-        assert result["code"] == (
-            "def calculate_average(numbers):\n"
-            "\treturn 0.0"
-        )
+        assert result["code"] == ("def calculate_average(numbers):\n\treturn 0.0")
 
     def test_n_comes_from_opening_marker_not_closing(self):
-        raw = (
-            "  ```python\n"
-            "  def calculate_average(numbers):\n"
-            "      return 0.0\n"
-            "```"
-        )
+        raw = "  ```python\n  def calculate_average(numbers):\n      return 0.0\n```"
 
         result = extract_code_block(raw)
 
         assert result is not None
-        assert result["code"] == (
-            "def calculate_average(numbers):\n"
-            "    return 0.0"
-        )
+        assert result["code"] == ("def calculate_average(numbers):\n    return 0.0")
 
     def test_tab_before_marker_is_recognized_but_not_counted(self):
         """Tabs before the marker are recognized but do not contribute to N."""
-        raw = (
-            "\t```python\n"
-            "\tdef calculate_average(numbers):\n"
-            "\t\treturn 0.0\n"
-            "\t```"
-        )
+        raw = "\t```python\n\tdef calculate_average(numbers):\n\t\treturn 0.0\n\t```"
 
         result = extract_code_block(raw)
 
         assert result is not None
-        assert result["code"] == (
-            "def calculate_average(numbers):\n"
-            "\t\treturn 0.0"
-        )
+        assert result["code"] == ("def calculate_average(numbers):\n\t\treturn 0.0")
 
     def test_preserves_indentation_beyond_fence_indent(self):
         """Indentation beyond the opening fence indentation is preserved."""
@@ -519,11 +428,9 @@ class TestDedentRule:
 
         assert result is not None
         assert result["code"] == (
-            "# header\n"
-            "  # comment\n"
-            "  def calculate_average(numbers):\n"
-            "      return 0.0"
+            "# header\n  # comment\n  def calculate_average(numbers):\n      return 0.0"
         )
+
 
 class TestKnownLimitations:
     def test_regex_matches_definition_like_line_inside_triple_quoted_string(self):

@@ -11,6 +11,7 @@ Known limitation:
 - list and tuple are indistinguishable after freezing.
   Dataset remains the source of truth for replay; TestResult is a record.
 """
+
 from __future__ import annotations
 
 import math
@@ -31,6 +32,7 @@ class TestStatus(str, Enum):
     ERROR = "ERROR"
     SKIPPED = "SKIPPED"
 
+
 TestStatus.__test__ = False
 
 # --------------------------------------------------------------------------
@@ -49,6 +51,7 @@ def _utc_now() -> datetime:
 # --------------------------------------------------------------------------
 # helpers: deep immutability
 # --------------------------------------------------------------------------
+
 
 def _freeze_value(value: Any) -> Any:
     """Recursively convert mutable containers into immutable equivalents.
@@ -86,9 +89,8 @@ def _freeze_value(value: Any) -> Any:
     if isinstance(value, (set, frozenset)):
         return frozenset(_freeze_value(item) for item in value)
 
-    raise TypeError(
-        f"Unsupported data type for freezing: {type(value).__name__}"
-    )
+    raise TypeError(f"Unsupported data type for freezing: {type(value).__name__}")
+
 
 def _thaw_value(value: Any) -> Any:
     """Inverse of _freeze_value (structure only, see docs for lossy cases)."""
@@ -194,8 +196,7 @@ def _validate_range(
         raise ValueError(f"{field_name} must be finite")
     if not min_value <= value <= max_value:
         raise ValueError(
-            f"{field_name} must be between {min_value} and {max_value}, "
-            f"got {value}"
+            f"{field_name} must be between {min_value} and {max_value}, got {value}"
         )
 
 
@@ -405,9 +406,7 @@ class TestResult:
             if self.error is None:
                 raise ValueError("ERROR status requires error field to be set")
             if self.actual_exception is not None:
-                raise ValueError(
-                    "ERROR status must not contain actual_exception"
-                )
+                raise ValueError("ERROR status must not contain actual_exception")
         elif self.error is not None:
             raise ValueError("error field can only be set for ERROR status")
 
@@ -415,18 +414,14 @@ class TestResult:
             TestStatus.PASS,
             TestStatus.FAIL,
         ):
-            raise ValueError(
-                "actual_exception can only be set for PASS or FAIL status"
-            )
+            raise ValueError("actual_exception can only be set for PASS or FAIL status")
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "result_id": self.result_id,
             "run_id": self.run_id,
             "test_case_id": self.test_case_id,
-            "model_info": (
-                self.model_info.to_dict() if self.model_info else None
-            ),
+            "model_info": (self.model_info.to_dict() if self.model_info else None),
             "input_data": _deep_serialize(self.input_data),
             "rendered_prompt": self.rendered_prompt,
             "raw_output": self.raw_output,
@@ -435,9 +430,7 @@ class TestResult:
             "status": self.status.value,
             "actual_result": _deep_serialize(self.actual_result),
             "actual_exception": (
-                self.actual_exception.to_dict()
-                if self.actual_exception
-                else None
+                self.actual_exception.to_dict() if self.actual_exception else None
             ),
             "error": self.error.to_dict() if self.error else None,
             "score": _serialize_number(self.score),
@@ -447,7 +440,9 @@ class TestResult:
             "metadata": _deep_serialize(self.metadata),
         }
 
+
 TestResult.__test__ = False
+
 
 @dataclass(frozen=True)
 class EvaluationRun:
@@ -483,14 +478,10 @@ class EvaluationRun:
             "dataset_id": self.dataset_id,
             "dataset_version": self.dataset_version,
             "task_version": self.task_version,
-            "model_info": (
-                self.model_info.to_dict() if self.model_info else None
-            ),
+            "model_info": (self.model_info.to_dict() if self.model_info else None),
             "prompt_template": self.prompt_template,
             "started_at": self.started_at.isoformat(),
-            "finished_at": (
-                self.finished_at.isoformat() if self.finished_at else None
-            ),
+            "finished_at": (self.finished_at.isoformat() if self.finished_at else None),
             "description": self.description,
             "tags": list(self.tags),
             "metadata": _deep_serialize(self.metadata),

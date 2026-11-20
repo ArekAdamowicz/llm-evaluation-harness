@@ -20,9 +20,7 @@ from llm_eval.results.storage import save_run
 
 # Load the dataset once for all test cases.
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DATASET_PATH = (
-    PROJECT_ROOT / "datasets" / "code-generation" / "CG-001" / "dataset.json"
-)
+DATASET_PATH = PROJECT_ROOT / "datasets" / "code-generation" / "CG-001" / "dataset.json"
 DATASET = load_dataset(DATASET_PATH)
 
 
@@ -42,13 +40,13 @@ def results_collector(evaluation_run):
     """Collect TestResult objects, generate report, and save to JSON."""
     results = []
     yield results
-    
+
     # Teardown: create finished run, verify JSON, save, and print report
     finished_run = replace(
         evaluation_run,
         finished_at=datetime.now(timezone.utc),
     )
-    
+
     # Save to JSON file
     results_root = PROJECT_ROOT / "results"
     saved_path = save_run(
@@ -57,12 +55,14 @@ def results_collector(evaluation_run):
         results_root,
         task_category="code-generation",
     )
-    
+
     # Print report
     _print_report(finished_run, results, saved_path)
 
 
-def _print_report(run: EvaluationRun, results: list[TestResult], saved_path: Path) -> None:
+def _print_report(
+    run: EvaluationRun, results: list[TestResult], saved_path: Path
+) -> None:
     """Print evaluation report to console."""
     # Count statuses
     total = len(results)
@@ -70,7 +70,7 @@ def _print_report(run: EvaluationRun, results: list[TestResult], saved_path: Pat
     fail_count = sum(1 for r in results if r.status is TestStatus.FAIL)
     error_count = sum(1 for r in results if r.status is TestStatus.ERROR)
     skipped_count = sum(1 for r in results if r.status is TestStatus.SKIPPED)
-    
+
     print("\n")
     print("CG-001 Evaluation Report")
     print("=" * 24)
@@ -83,7 +83,7 @@ def _print_report(run: EvaluationRun, results: list[TestResult], saved_path: Pat
     print(f"ERROR:       {error_count:>2}")
     print(f"SKIPPED:     {skipped_count:>2}")
     print()
-    
+
     # Failed cases
     failed = [r for r in results if r.status is TestStatus.FAIL]
     print("Failed cases:")
@@ -91,14 +91,16 @@ def _print_report(run: EvaluationRun, results: list[TestResult], saved_path: Pat
         for r in failed:
             print(f"  - {r.test_case_id}:")
             if r.actual_exception:
-                print(f"      Exception: {r.actual_exception.exception_type}: {r.actual_exception.message}")
+                print(
+                    f"      Exception: {r.actual_exception.exception_type}: {r.actual_exception.message}"
+                )
             else:
                 print(f"      Expected: {r.expected_output}")
                 print(f"      Actual: {r.actual_result}")
     else:
         print("  None")
     print()
-    
+
     # Error cases
     errors = [r for r in results if r.status is TestStatus.ERROR]
     print("Evaluation errors:")
@@ -114,12 +116,14 @@ def _print_report(run: EvaluationRun, results: list[TestResult], saved_path: Pat
     DATASET.cases,
     ids=lambda case: case["id"],
 )
-def test_cg001_integration(case: dict, evaluation_run: EvaluationRun, results_collector: list[TestResult]):
+def test_cg001_integration(
+    case: dict, evaluation_run: EvaluationRun, results_collector: list[TestResult]
+):
     """Test single case and collect TestResult."""
     case_id = case["id"]
     input_data = case["input"]
     expected = case["expected"]
-    
+
     # Common fields for TestResult
     common_fields = {
         "run_id": evaluation_run.run_id,
@@ -128,7 +132,7 @@ def test_cg001_integration(case: dict, evaluation_run: EvaluationRun, results_co
         "expected_output": expected,
         "tags": [case["category"]],
     }
-    
+
     # 1. Execute the reference implementation
     try:
         result = calculate_average(input_data)
@@ -136,15 +140,14 @@ def test_cg001_integration(case: dict, evaluation_run: EvaluationRun, results_co
     except Exception as error:  # noqa: BLE001
         result = None
         raised_exception = error
-    
+
     # 2. Create TestResult BEFORE assertion
     if expected["type"] == "exception":
         if raised_exception is not None:
             # Check if exception matches expectations
-            exception_matches = (
-                type(raised_exception).__name__ == expected["exception_class"]
-                and expected["message"] in str(raised_exception)
-            )
+            exception_matches = type(raised_exception).__name__ == expected[
+                "exception_class"
+            ] and expected["message"] in str(raised_exception)
             status = TestStatus.PASS if exception_matches else TestStatus.FAIL
             test_result = TestResult(
                 **common_fields,
@@ -200,10 +203,10 @@ def test_cg001_integration(case: dict, evaluation_run: EvaluationRun, results_co
                 message=f"Unknown expected result type: {expected['type']}",
             ),
         )
-    
+
     # 3. Add TestResult to collector
     results_collector.append(test_result)
-    
+
     # 4. Now perform pytest assertion
     if expected["type"] == "exception":
         assert raised_exception is not None, (
@@ -232,7 +235,4 @@ def test_cg001_integration(case: dict, evaluation_run: EvaluationRun, results_co
             abs_tol=expected.get("abs_tol", 1e-12),
         )
     else:
-        pytest.fail(
-            f"[{case_id}] Unknown expected result type: "
-            f"{expected['type']}"
-        )
+        pytest.fail(f"[{case_id}] Unknown expected result type: {expected['type']}")

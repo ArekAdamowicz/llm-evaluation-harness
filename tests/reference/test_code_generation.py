@@ -11,18 +11,19 @@ from llm_eval.reference.code_generation import calculate_average
 # CG-001 v1.0: Basic functional tests
 # ============================================================
 
+
 @pytest.mark.parametrize(
     ("numbers", "expected"),
     [
-        ([1.0, 2.0, 3.0], 2.0),       # TD1: standard case
-        ([2.5], 2.5),                 # TD2: single element
-        ([0.1, 0.2], 0.15),           # TD3: floating-point values
-        ([10.0, 10.0, 10.0], 10.0),   # TD4: identical values
-        ([-2.5, -7.5], -5.0),         # TD5: negative values
-        ([-1.0, 0.0, 1.0], 0.0),      # TD6: mixed signs
-        ([0.0, 0.0], 0.0),            # TD7: zero values
-        ([1, 2], 1.5),                # TD8: integer inputs
-        ([1, 2, 3], 2.0),             # TD10: return type
+        ([1.0, 2.0, 3.0], 2.0),  # TD1: standard case
+        ([2.5], 2.5),  # TD2: single element
+        ([0.1, 0.2], 0.15),  # TD3: floating-point values
+        ([10.0, 10.0, 10.0], 10.0),  # TD4: identical values
+        ([-2.5, -7.5], -5.0),  # TD5: negative values
+        ([-1.0, 0.0, 1.0], 0.0),  # TD6: mixed signs
+        ([0.0, 0.0], 0.0),  # TD7: zero values
+        ([1, 2], 1.5),  # TD8: integer inputs
+        ([1, 2, 3], 2.0),  # TD10: return type
     ],
 )
 def test_calculate_average_returns_correct_mean(numbers, expected):
@@ -97,6 +98,7 @@ def test_calculate_average_has_meaningful_docstring():
 # CG-001 v1.1: Input validation
 # ============================================================
 
+
 @pytest.mark.parametrize(
     "numbers",
     [
@@ -111,9 +113,7 @@ def test_calculate_average_rejects_invalid_types(numbers):
     with pytest.raises(TypeError) as exc_info:
         calculate_average(numbers)
 
-    assert str(exc_info.value) == (
-        "all elements must be int or float, excluding bool"
-    )
+    assert str(exc_info.value) == ("all elements must be int or float, excluding bool")
 
 
 @pytest.mark.parametrize(
@@ -136,6 +136,7 @@ def test_calculate_average_rejects_non_list_input(numbers):
 # ============================================================
 # CG-001 v1.1: NaN and Infinity validation
 # ============================================================
+
 
 def test_calculate_average_rejects_nan():
     with pytest.raises(ValueError) as exc_info:
@@ -162,6 +163,7 @@ def test_calculate_average_rejects_infinity(value):
 # CG-001 v1.1: Numerical precision
 # ============================================================
 
+
 def test_calculate_average_handles_floating_point_precision():
     numbers = [1e16, 1.0, -1e16]
 
@@ -186,6 +188,7 @@ def test_calculate_average_preserves_small_values_with_large_cancellation():
 # ============================================================
 # CG-001 v1.1: Overflow protection
 # ============================================================
+
 
 def test_calculate_average_handles_intermediate_overflow():
     numbers = [1e308, 1e308]
@@ -214,6 +217,7 @@ def test_calculate_average_rejects_unrepresentable_mean(numbers):
 # CG-001 v1.1: Metamorphic properties
 # ============================================================
 
+
 def test_calculate_average_is_order_independent():
     numbers = [1e16, 1.0, -1e16]
     reversed_numbers = list(reversed(numbers))
@@ -229,9 +233,7 @@ def test_calculate_average_obeys_shift_invariance():
     shift = 1000.0
 
     original_average = calculate_average(numbers)
-    shifted_average = calculate_average(
-        [number + shift for number in numbers]
-    )
+    shifted_average = calculate_average([number + shift for number in numbers])
 
     assert_numeric_close(
         shifted_average,
@@ -242,6 +244,7 @@ def test_calculate_average_obeys_shift_invariance():
 # ============================================================
 # CG-001 v1.2: Arbitrarily large integer inputs
 # ============================================================
+
 
 def test_calculate_average_handles_large_integer_cancellation():
     numbers = [10**400, -(10**400), 1]
@@ -276,9 +279,7 @@ def test_calculate_average_validates_all_element_types_before_numeric_conversion
     with pytest.raises(TypeError) as exc_info:
         calculate_average(numbers)
 
-    assert str(exc_info.value) == (
-        "all elements must be int or float, excluding bool"
-    )
+    assert str(exc_info.value) == ("all elements must be int or float, excluding bool")
 
 
 def test_calculate_average_rejects_unrepresentable_mean_after_large_integer_cancellation():

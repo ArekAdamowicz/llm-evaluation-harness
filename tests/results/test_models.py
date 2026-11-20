@@ -160,12 +160,14 @@ class TestFreezeValueAllowlist:
 
     def test_decimal_rejected(self):
         from decimal import Decimal
+
         with pytest.raises(TypeError, match="Unsupported data type"):
             _freeze_value(Decimal("1.5"))
 
     def test_custom_class_rejected(self):
         class Custom:
             pass
+
         with pytest.raises(TypeError, match="Unsupported data type"):
             _freeze_value(Custom())
 
@@ -304,9 +306,7 @@ class TestMetricsValidation:
         with pytest.raises(ValueError, match="must be non-negative"):
             Metrics(latency_ms=value)
 
-    @pytest.mark.parametrize(
-        "field", ["input_tokens", "output_tokens", "total_tokens"]
-    )
+    @pytest.mark.parametrize("field", ["input_tokens", "output_tokens", "total_tokens"])
     @pytest.mark.parametrize("value", [True, 1.5, "10"])
     def test_tokens_must_be_int(self, field, value):
         with pytest.raises(TypeError, match=f"{field} must be an integer"):
@@ -381,9 +381,7 @@ class TestTypeValidation:
             TestResult(status=TestStatus.ERROR, error={"error_type": "X"})
 
     def test_actual_exception_must_be_exception_info(self):
-        with pytest.raises(
-            TypeError, match="actual_exception must be a ExceptionInfo"
-        ):
+        with pytest.raises(TypeError, match="actual_exception must be a ExceptionInfo"):
             TestResult(status=TestStatus.FAIL, actual_exception="ValueError")
 
     def test_model_info_type_checked(self):
@@ -487,9 +485,7 @@ class TestStatusSemantics:
         with pytest.raises(ValueError, match="error field can only be set"):
             TestResult(status=status, error=ErrorInfo("APIError", "429"))
 
-    @pytest.mark.parametrize(
-        "status", [TestStatus.SKIPPED, TestStatus.ERROR]
-    )
+    @pytest.mark.parametrize("status", [TestStatus.SKIPPED, TestStatus.ERROR])
     def test_actual_exception_only_for_pass_or_fail(self, status):
         kwargs = {}
         if status is TestStatus.ERROR:

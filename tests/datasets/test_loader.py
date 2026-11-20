@@ -29,10 +29,7 @@ def test_load_dataset_case_ids_are_unique():
 def test_decode_tuple_tag():
     dataset = load_dataset(DATASET_PATH)
 
-    case = next(
-        case for case in dataset.cases
-        if case["id"] == "CG-001-F06"
-    )
+    case = next(case for case in dataset.cases if case["id"] == "CG-001-F06")
 
     assert case["input"] == (1, 2, 3)
     assert isinstance(case["input"], tuple)
@@ -41,13 +38,11 @@ def test_decode_tuple_tag():
 def test_decode_huge_integer_tag():
     dataset = load_dataset(DATASET_PATH)
 
-    case = next(
-        case for case in dataset.cases
-        if case["id"] == "CG-001-F17"
-    )
+    case = next(case for case in dataset.cases if case["id"] == "CG-001-F17")
 
     assert isinstance(case["input"][0], int)
     assert len(str(case["input"][0])) == 401
+
 
 def test_decode_integer_exceeding_python_string_conversion_limit(tmp_path):
     dataset_path = tmp_path / "dataset.json"
@@ -87,40 +82,39 @@ def test_decode_integer_exceeding_python_string_conversion_limit(tmp_path):
 
     assert loaded.cases[0]["input"][0] == 10**5000
 
+
 def test_decode_special_float_tags():
     dataset = load_dataset(DATASET_PATH)
 
-    nan_case = next(
-        case for case in dataset.cases
-        if case["id"] == "CG-001-F10"
-    )
+    nan_case = next(case for case in dataset.cases if case["id"] == "CG-001-F10")
 
     positive_inf_case = next(
-        case for case in dataset.cases
-        if case["id"] == "CG-001-F11"
+        case for case in dataset.cases if case["id"] == "CG-001-F11"
     )
 
     negative_inf_case = next(
-        case for case in dataset.cases
-        if case["id"] == "CG-001-F12"
+        case for case in dataset.cases if case["id"] == "CG-001-F12"
     )
 
     assert math.isnan(nan_case["input"][1])
     assert positive_inf_case["input"][1] == math.inf
     assert negative_inf_case["input"][1] == -math.inf
 
+
 def test_load_dataset_rejects_unsupported_schema_version(tmp_path):
     dataset_path = tmp_path / "dataset.json"
 
     dataset_path.write_text(
-        json.dumps({
-            "schema_version": "99.0",
-            "dataset_id": "TEST-001",
-            "dataset_version": "1.0",
-            "task_version": "1.0",
-            "description": "Test dataset",
-            "cases": [],
-        }),
+        json.dumps(
+            {
+                "schema_version": "99.0",
+                "dataset_id": "TEST-001",
+                "dataset_version": "1.0",
+                "task_version": "1.0",
+                "description": "Test dataset",
+                "cases": [],
+            }
+        ),
         encoding="utf-8",
     )
 
@@ -143,14 +137,16 @@ def test_load_dataset_rejects_duplicate_case_ids(tmp_path):
     }
 
     dataset_path.write_text(
-        json.dumps({
-            "schema_version": "1.0",
-            "dataset_id": "TEST-001",
-            "dataset_version": "1.0",
-            "task_version": "1.0",
-            "description": "Test dataset",
-            "cases": [case, case],
-        }),
+        json.dumps(
+            {
+                "schema_version": "1.0",
+                "dataset_id": "TEST-001",
+                "dataset_version": "1.0",
+                "task_version": "1.0",
+                "description": "Test dataset",
+                "cases": [case, case],
+            }
+        ),
         encoding="utf-8",
     )
 
@@ -162,13 +158,15 @@ def test_load_dataset_rejects_missing_required_field(tmp_path):
     dataset_path = tmp_path / "dataset.json"
 
     dataset_path.write_text(
-        json.dumps({
-            "schema_version": "1.0",
-            "dataset_id": "TEST-001",
-            "dataset_version": "1.0",
-            "task_version": "1.0",
-            "cases": [],
-        }),
+        json.dumps(
+            {
+                "schema_version": "1.0",
+                "dataset_id": "TEST-001",
+                "dataset_version": "1.0",
+                "task_version": "1.0",
+                "cases": [],
+            }
+        ),
         encoding="utf-8",
     )
 
@@ -240,6 +238,7 @@ def test_decode_nested_tagged_values(tmp_path):
     assert isinstance(decoded, tuple)
     assert decoded[0] == 1
     assert decoded[1] == 100000000000000000000
+
 
 def test_decode_rejects_unknown_tag(tmp_path):
     dataset_path = tmp_path / "dataset.json"
@@ -314,6 +313,7 @@ def test_decode_rejects_invalid_integer_tag(tmp_path):
     with pytest.raises(DatasetLoadError, match="invalid integer value"):
         load_dataset(dataset_path)
 
+
 def test_decode_rejects_invalid_float_tag(tmp_path):
     dataset_path = tmp_path / "dataset.json"
 
@@ -350,6 +350,7 @@ def test_decode_rejects_invalid_float_tag(tmp_path):
     with pytest.raises(DatasetLoadError, match="unsupported special float"):
         load_dataset(dataset_path)
 
+
 def test_decode_rejects_non_string_float_value(tmp_path):
     dataset_path = tmp_path / "dataset.json"
 
@@ -385,6 +386,7 @@ def test_decode_rejects_non_string_float_value(tmp_path):
 
     with pytest.raises(DatasetLoadError, match="float 'value' must be a string"):
         load_dataset(dataset_path)
+
 
 def _write_dataset_with_expected(tmp_path, expected):
     dataset_path = tmp_path / "dataset.json"
@@ -440,7 +442,9 @@ def test_expected_numeric_rejects_boolean_value(tmp_path):
         {"type": "numeric", "value": True},
     )
 
-    with pytest.raises(DatasetLoadError, match="numeric expected value must be a number"):
+    with pytest.raises(
+        DatasetLoadError, match="numeric expected value must be a number"
+    ):
         load_dataset(path)
 
 
@@ -450,7 +454,9 @@ def test_expected_numeric_rejects_string_value(tmp_path):
         {"type": "numeric", "value": "2.5"},
     )
 
-    with pytest.raises(DatasetLoadError, match="numeric expected value must be a number"):
+    with pytest.raises(
+        DatasetLoadError, match="numeric expected value must be a number"
+    ):
         load_dataset(path)
 
 

@@ -133,7 +133,6 @@ def test_assert_numeric_close_rejects_non_numeric_expected(expected):
         (1e-9, -1.0),
     ],
 )
-
 def test_assert_numeric_close_rejects_negative_tolerances(
     rel_tol,
     abs_tol,
@@ -149,6 +148,7 @@ def test_assert_numeric_close_rejects_negative_tolerances(
             abs_tol=abs_tol,
         )
 
+
 @pytest.mark.parametrize(
     "rel_tol, abs_tol",
     [
@@ -158,7 +158,6 @@ def test_assert_numeric_close_rejects_negative_tolerances(
         (1e-9, float("inf")),
     ],
 )
-
 def test_assert_numeric_close_rejects_non_finite_tolerances(
     rel_tol,
     abs_tol,
@@ -174,6 +173,7 @@ def test_assert_numeric_close_rejects_non_finite_tolerances(
             abs_tol=abs_tol,
         )
 
+
 @pytest.mark.parametrize(
     "rel_tol, abs_tol",
     [
@@ -183,7 +183,6 @@ def test_assert_numeric_close_rejects_non_finite_tolerances(
         (1e-9, "1e-12"),
     ],
 )
-
 def test_assert_numeric_close_rejects_invalid_tolerance_types(
     rel_tol,
     abs_tol,
@@ -198,6 +197,7 @@ def test_assert_numeric_close_rejects_invalid_tolerance_types(
             rel_tol=rel_tol,
             abs_tol=abs_tol,
         )
+
 
 def test_assert_numeric_close_accepts_zero_tolerances_for_equal_values():
     assert_numeric_close(
@@ -220,6 +220,7 @@ def test_assert_numeric_close_rejects_difference_with_zero_tolerances():
             abs_tol=0.0,
         )
 
+
 def test_assert_numeric_close_validates_actual_before_tolerances():
     with pytest.raises(
         AssertionError,
@@ -231,6 +232,7 @@ def test_assert_numeric_close_validates_actual_before_tolerances():
             rel_tol=-1.0,
         )
 
+
 def test_assert_numeric_close_validates_expected_before_tolerances():
     with pytest.raises(
         AssertionError,
@@ -241,6 +243,7 @@ def test_assert_numeric_close_validates_expected_before_tolerances():
             True,
             rel_tol=-1.0,
         )
+
 
 @pytest.mark.parametrize(
     "expected",

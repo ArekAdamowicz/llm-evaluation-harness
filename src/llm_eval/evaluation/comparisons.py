@@ -30,33 +30,23 @@ def assert_numeric_close(
 
     # Validate actual value
     if type(actual) is bool:
-        raise AssertionError(
-            "Boolean result is not a valid numerical result"
-        )
+        raise AssertionError("Boolean result is not a valid numerical result")
 
     if not isinstance(actual, (int, float)):
-        raise AssertionError(
-            "Actual result is not a valid numerical result"
-        )
+        raise AssertionError("Actual result is not a valid numerical result")
 
     try:
         if not math.isfinite(actual):
             raise AssertionError("Result is NaN or infinite")
     except OverflowError:
-        raise AssertionError(
-            "Result cannot be represented as a finite float"
-        ) from None
+        raise AssertionError("Result cannot be represented as a finite float") from None
 
     # Validate expected value
     if type(expected) is bool:
-        raise AssertionError(
-            "Boolean expected value is not valid"
-        )
+        raise AssertionError("Boolean expected value is not valid")
 
     if not isinstance(expected, (int, float)):
-        raise AssertionError(
-            "Expected value is not a valid numerical value"
-        )
+        raise AssertionError("Expected value is not a valid numerical value")
 
     try:
         if not math.isfinite(expected):
@@ -68,9 +58,7 @@ def assert_numeric_close(
 
     # Validate tolerances
     for tolerance in (rel_tol, abs_tol):
-        if isinstance(tolerance, bool) or not isinstance(
-            tolerance, (int, float)
-        ):
+        if isinstance(tolerance, bool) or not isinstance(tolerance, (int, float)):
             raise TypeError("Tolerances must be numeric")
 
         try:
@@ -89,6 +77,4 @@ def assert_numeric_close(
         rel_tol=rel_tol,
         abs_tol=abs_tol,
     ):
-        raise AssertionError(
-            f"Expected {expected!r}, got {actual!r}"
-        )
+        raise AssertionError(f"Expected {expected!r}, got {actual!r}")

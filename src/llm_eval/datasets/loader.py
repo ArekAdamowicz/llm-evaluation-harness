@@ -7,6 +7,7 @@ from typing import Any
 
 SUPPORTED_SCHEMA_VERSION = "1.0"
 
+
 class DatasetLoadError(ValueError):
     """Raised when a dataset cannot be loaded or validated."""
 
@@ -20,16 +21,16 @@ class Dataset:
     description: str
     cases: list[dict[str, Any]]
 
+
 def _require_non_empty_string(
     value: Any,
     field_name: str,
 ) -> str:
     if not isinstance(value, str) or not value.strip():
-        raise DatasetLoadError(
-            f"'{field_name}' must be a non-empty string"
-        )
+        raise DatasetLoadError(f"'{field_name}' must be a non-empty string")
 
     return value
+
 
 def _parse_integer_string(value: str) -> int:
     """Parse a decimal integer string without Python's digit limit."""
@@ -48,10 +49,11 @@ def _parse_integer_string(value: str) -> int:
     result = 0
 
     for index in range(0, len(value), 9):
-        chunk = value[index:index + 9]
+        chunk = value[index : index + 9]
         result = result * (10 ** len(chunk)) + int(chunk)
 
     return sign * result
+
 
 def _decode_tagged_value(
     value: Any,
@@ -75,9 +77,7 @@ def _decode_tagged_value(
         tag = value["$type"]
 
         if not isinstance(tag, str):
-            raise DatasetLoadError(
-                f"{context}: '$type' must be a string"
-            )
+            raise DatasetLoadError(f"{context}: '$type' must be a string")
 
         if tag == "tuple":
             if set(value) != {"$type", "items"}:
@@ -88,9 +88,7 @@ def _decode_tagged_value(
             items = value["items"]
 
             if not isinstance(items, list):
-                raise DatasetLoadError(
-                    f"{context}: tuple 'items' must be a list"
-                )
+                raise DatasetLoadError(f"{context}: tuple 'items' must be a list")
 
             return tuple(
                 _decode_tagged_value(item, f"{context}.items[{index}]")
@@ -131,16 +129,14 @@ def _decode_tagged_value(
             raw_value = value["value"]
 
             if not isinstance(raw_value, str):
-                raise DatasetLoadError(
-                    f"{context}: float 'value' must be a string"
-                )
-            
+                raise DatasetLoadError(f"{context}: float 'value' must be a string")
+
             special_floats = {
                 "nan": math.nan,
                 "inf": math.inf,
                 "-inf": -math.inf,
             }
-     
+
             if raw_value not in special_floats:
                 raise DatasetLoadError(
                     f"{context}: unsupported special float '{raw_value}'"
@@ -148,9 +144,7 @@ def _decode_tagged_value(
 
             return special_floats[raw_value]
 
-        raise DatasetLoadError(
-            f"{context}: unknown tagged value type '{tag}'"
-        )
+        raise DatasetLoadError(f"{context}: unknown tagged value type '{tag}'")
 
     return value
 
@@ -161,37 +155,29 @@ def _reject_nonstandard_constant(value: str) -> None:
         "Use an explicit tagged float instead."
     )
 
+
 def _validate_expected(
     expected: Any,
     context: str,
 ) -> dict[str, Any]:
     if not isinstance(expected, dict):
-        raise DatasetLoadError(
-            f"{context} must be a JSON object"
-        )
+        raise DatasetLoadError(f"{context} must be a JSON object")
 
     expected_type = expected.get("type")
 
     if expected_type == "numeric":
         if "value" not in expected:
-            raise DatasetLoadError(
-                f"{context}: numeric expected requires 'value'"
-            )
+            raise DatasetLoadError(f"{context}: numeric expected requires 'value'")
 
         value = expected["value"]
 
-        if (
-            isinstance(value, bool)
-            or not isinstance(value, (int, float))
-        ):
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
             raise DatasetLoadError(
                 f"{context}: numeric expected value must be a number"
             )
 
         if isinstance(value, float) and not math.isfinite(value):
-            raise DatasetLoadError(
-                f"{context}: numeric expected value must be finite"
-            )
+            raise DatasetLoadError(f"{context}: numeric expected value must be finite")
 
         for tolerance_name, default_value in (
             ("rel_tol", 1e-9),
@@ -202,18 +188,14 @@ def _validate_expected(
                 default_value,
             )
 
-            if (
-                isinstance(tolerance, bool)
-                or not isinstance(tolerance, (int, float))
-            ):
+            if isinstance(tolerance, bool) or not isinstance(tolerance, (int, float)):
                 raise DatasetLoadError(
                     f"{context}: '{tolerance_name}' must be a number"
                 )
 
             if (
-                (isinstance(tolerance, float) and not math.isfinite(tolerance))
-                or tolerance < 0
-            ):
+                isinstance(tolerance, float) and not math.isfinite(tolerance)
+            ) or tolerance < 0:
                 raise DatasetLoadError(
                     f"{context}: tolerances must be non-negative and finite"
                 )
@@ -224,34 +206,24 @@ def _validate_expected(
         exception_class = expected.get("exception_class")
         message = expected.get("message")
 
-        if (
-            not isinstance(exception_class, str)
-            or not exception_class.strip()
-        ):
+        if not isinstance(exception_class, str) or not exception_class.strip():
             raise DatasetLoadError(
                 f"{context}: exception expected requires a non-empty 'exception_class'"
             )
 
-        if (
-            not isinstance(message, str)
-            or not message.strip()
-        ):
+        if not isinstance(message, str) or not message.strip():
             raise DatasetLoadError(
                 f"{context}: exception expected requires a non-empty 'message'"
             )
 
         return expected
 
-    raise DatasetLoadError(
-        f"{context}: Unsupported expected type '{expected_type}'"
-    )
+    raise DatasetLoadError(f"{context}: Unsupported expected type '{expected_type}'")
 
 
 def _validate_dataset(data: Any) -> Dataset:
     if not isinstance(data, dict):
-        raise DatasetLoadError(
-            "Dataset root must be a JSON object"
-        )
+        raise DatasetLoadError("Dataset root must be a JSON object")
 
     required_fields = {
         "schema_version",
@@ -269,9 +241,7 @@ def _validate_dataset(data: Any) -> Dataset:
             f"Missing dataset fields: {', '.join(sorted(missing_fields))}"
         )
 
-    schema_version = _require_non_empty_string(
-        data["schema_version"], "schema_version"
-    )
+    schema_version = _require_non_empty_string(data["schema_version"], "schema_version")
 
     if schema_version != SUPPORTED_SCHEMA_VERSION:
         raise DatasetLoadError(
@@ -279,25 +249,17 @@ def _validate_dataset(data: Any) -> Dataset:
             f"Supported version: '{SUPPORTED_SCHEMA_VERSION}'"
         )
 
-    dataset_id = _require_non_empty_string(
-        data["dataset_id"], "dataset_id"
-    )
+    dataset_id = _require_non_empty_string(data["dataset_id"], "dataset_id")
     dataset_version = _require_non_empty_string(
         data["dataset_version"], "dataset_version"
     )
-    task_version = _require_non_empty_string(
-        data["task_version"], "task_version"
-    )
-    description = _require_non_empty_string(
-        data["description"], "description"
-    )
+    task_version = _require_non_empty_string(data["task_version"], "task_version")
+    description = _require_non_empty_string(data["description"], "description")
 
     raw_cases = data["cases"]
 
     if not isinstance(raw_cases, list) or not raw_cases:
-        raise DatasetLoadError(
-            "'cases' must be a non-empty list"
-        )
+        raise DatasetLoadError("'cases' must be a non-empty list")
 
     validated_cases = []
     seen_ids = set()
@@ -314,26 +276,19 @@ def _validate_dataset(data: Any) -> Dataset:
         context = f"cases[{index}]"
 
         if not isinstance(case, dict):
-            raise DatasetLoadError(
-                f"{context} must be a JSON object"
-            )
+            raise DatasetLoadError(f"{context} must be a JSON object")
 
         missing_case_fields = required_case_fields - case.keys()
 
         if missing_case_fields:
             raise DatasetLoadError(
-                f"{context}: missing fields: "
-                f"{', '.join(sorted(missing_case_fields))}"
+                f"{context}: missing fields: {', '.join(sorted(missing_case_fields))}"
             )
 
-        case_id = _require_non_empty_string(
-            case["id"], f"{context}.id"
-        )
+        case_id = _require_non_empty_string(case["id"], f"{context}.id")
 
         if case_id in seen_ids:
-            raise DatasetLoadError(
-                f"Duplicate case ID '{case_id}'"
-            )
+            raise DatasetLoadError(f"Duplicate case ID '{case_id}'")
 
         seen_ids.add(case_id)
 
@@ -341,24 +296,22 @@ def _validate_dataset(data: Any) -> Dataset:
             case["description"], f"{context}.description"
         )
 
-        category = _require_non_empty_string(
-            case["category"], f"{context}.category"
-        )
+        category = _require_non_empty_string(case["category"], f"{context}.category")
 
         expected = _validate_expected(
             case["expected"],
             f"{context}.expected",
         )
 
-        validated_cases.append({
-            **case,
-            "description": case_description,
-            "category": category,
-            "input": _decode_tagged_value(
-                case["input"], f"{context}.input"
-            ),
-            "expected": expected,
-        })
+        validated_cases.append(
+            {
+                **case,
+                "description": case_description,
+                "category": category,
+                "input": _decode_tagged_value(case["input"], f"{context}.input"),
+                "expected": expected,
+            }
+        )
 
     return Dataset(
         schema_version=schema_version,
@@ -368,6 +321,7 @@ def _validate_dataset(data: Any) -> Dataset:
         description=description,
         cases=validated_cases,
     )
+
 
 def load_dataset(path: str | Path) -> Dataset:
     """Load, validate and decode a JSON dataset."""
