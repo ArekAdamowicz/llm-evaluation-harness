@@ -115,7 +115,7 @@ def _serialize_special_float(value: float) -> dict[str, Any] | float:
     return value
 
 
-def _serialize_number(value: int | float | None) -> Any:
+def _serialize_number(value: float | None) -> Any:
     """Serialize an optional scalar numeric field."""
     if value is None:
         return None
@@ -142,7 +142,7 @@ def _deep_serialize(value: Any) -> Any:
 # --------------------------------------------------------------------------
 
 
-def _is_finite(value: int | float) -> bool:
+def _is_finite(value: float) -> bool:
     try:
         return math.isfinite(value)
     except OverflowError:
@@ -150,7 +150,7 @@ def _is_finite(value: int | float) -> bool:
         return False
 
 
-def _validate_non_negative(value: float | int | None, field_name: str) -> None:
+def _validate_non_negative(value: float | None, field_name: str) -> None:
     """Value must be a finite, non-negative number (bool rejected)."""
     if value is None:
         return

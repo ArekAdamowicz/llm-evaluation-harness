@@ -133,7 +133,7 @@ def test_cg001_integration(case: dict, evaluation_run: EvaluationRun, results_co
     try:
         result = calculate_average(input_data)
         raised_exception = None
-    except Exception as error:
+    except Exception as error:  # noqa: BLE001
         result = None
         raised_exception = error
     
@@ -218,7 +218,7 @@ def test_cg001_integration(case: dict, evaluation_run: EvaluationRun, results_co
         assert expected["message"] in str(raised_exception), (
             f"[{case_id}] Expected message containing "
             f"'{expected['message']}', "
-            f"got '{str(raised_exception)}'."
+            f"got '{raised_exception!s}'."
         )
     elif expected["type"] == "numeric":
         assert raised_exception is None, (

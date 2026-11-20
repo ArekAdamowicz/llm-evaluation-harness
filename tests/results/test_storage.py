@@ -1,7 +1,6 @@
 """Tests for llm_eval.results.storage."""
 
 import json
-import os
 from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
@@ -330,9 +329,14 @@ class TestSaveRun:
         result = TestResult(run_id=run.run_id, status=TestStatus.PASS)
         
         # Mock os.replace to raise an exception
-        with patch("llm_eval.results.storage.os.replace", side_effect=OSError("Mock error")):
-            with pytest.raises(OSError, match="Mock error"):
-                save_run(run, [result], tmp_path)
+        with (
+            patch(
+                "llm_eval.results.storage.os.replace",
+                side_effect=OSError("Mock error"),
+            ),
+            pytest.raises(OSError, match="Mock error"),
+        ):
+            save_run(run, [result], tmp_path)
         
         # Check no .tmp_ files remain
         temp_files = list((tmp_path / "CG-001").glob(".tmp_*"))

@@ -12,7 +12,6 @@ from typing import Any
 
 from llm_eval.results.models import EvaluationRun, TestResult, TestStatus
 
-
 RESULTS_SCHEMA_VERSION = "1.0"
 
 

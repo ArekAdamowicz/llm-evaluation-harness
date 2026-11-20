@@ -1,4 +1,17 @@
-"""Tests for extracting Python code blocks from LLM responses."""
+"""Tests for extracting Python code from LLM responses.
+
+The extraction contract:
+- Only fenced Python code blocks are considered.
+- Supported language tags: python, py, python3.
+- A candidate must define the required function.
+- If multiple candidates exist, the first is returned and marked ambiguous.
+- Unfenced code and unsupported language blocks are rejected.
+- Unclosed fences are discarded.
+- Extracted code is dedented according to the opening fence indentation.
+
+Implementation details and known parser limitations are documented in
+llm_eval.evaluation.code_extraction.
+"""
 
 import json
 
@@ -8,7 +21,6 @@ from llm_eval.evaluation.code_extraction import (
     REQUIRED_FUNCTION,
     extract_code_block,
 )
-
 
 VALID_CODE = (
     "def calculate_average(numbers):\n"

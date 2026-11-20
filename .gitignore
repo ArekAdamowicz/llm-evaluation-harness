@@ -31,3 +31,7 @@ Thumbs.db
 
 # Evaluation results
 /results/
+
+# Build artifacts
+build/
+dist/
