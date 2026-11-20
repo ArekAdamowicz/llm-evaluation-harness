@@ -28,3 +28,6 @@ Thumbs.db
 
 # Python package metadata
 *.egg-info/
+
+# Evaluation results
+/results/
