@@ -54,6 +54,8 @@ Integer values are accepted as valid input, even though the function annotation 
 
 Boolean values are not accepted, despite `bool` being a subclass of `int` in Python.
 
+List subclasses are accepted.
+
 ### 1.4 Returns
 
 `float`: The arithmetic mean of the input values.
@@ -93,7 +95,7 @@ The function MUST NOT silently propagate NaN or Infinity into its result.
 | AC8 | Numerical Precision | Correctly handle numerically challenging inputs without catastrophic cancellation. | High |
 | AC9 | Overflow Protection | Do not return a non-finite result or reject a representable mean merely because an intermediate sum overflows. | High |
 | AC10 | Immutability | Do not modify the original input list. | High |
-| AC11 | Type Annotations | Maintain the required function signature and type annotations. | Medium |
+| AC11 | Type Annotations | Maintain the required function signature and type annotations. | High |
 | AC12 | Documentation | Include a meaningful docstring describing the function's purpose and behavior. | Medium |
 | AC13 | Shift Invariance | Satisfy the shift invariance property for applicable valid inputs. | High |
 | AC14 | Order Independence | Produce equivalent results regardless of input element order. | High |
@@ -219,7 +221,7 @@ The test data must be selected so that transformations do not introduce invalid 
 
 ### 4.1 Property A: Shift Invariance
 
-Adding a constant `C` to every element of a list should increase the arithmetic mean by exactly `C`.
+Adding a constant `C` to every element of a list should increase the arithmetic mean by `C`, within the specified numerical tolerance.
 
 Mathematical relationship:
 
@@ -239,7 +241,7 @@ assert math.isclose(
     calculate_average(shifted),
     calculate_average(numbers) + constant,
     rel_tol=1e-9,
-    abs_tol=1e-12
+    abs_tol=1e-12,
 )
 ```
 
@@ -257,7 +259,7 @@ assert math.isclose(
     calculate_average(numbers),
     calculate_average(reversed_numbers),
     rel_tol=1e-9,
-    abs_tol=1e-12
+    abs_tol=1e-12,
 )
 ```
 
@@ -439,8 +441,8 @@ The evaluation framework MUST use `math.isclose()` for numerical comparisons.
 **Default tolerance:**
 
 ```python
-rel_tol=1e-9
-abs_tol=1e-12
+rel_tol = 1e-9
+abs_tol = 1e-12
 ```
 
 Custom tolerances MAY be provided when justified by the test case requirements.
@@ -489,10 +491,12 @@ The framework MUST reject:
 Both `rel_tol` and `abs_tol` MUST:
 
 - Be integers or floating-point numbers, excluding Boolean values.
-- Be finite.
+- Be representable as finite Python floating-point numbers.
 - Be non-negative.
 
-The framework MUST reject invalid tolerance types with `TypeError` and negative or non-finite tolerances with `ValueError`.
+Integer tolerance values that cannot be converted to finite Python floats MUST be rejected with ValueError.
+
+The framework MUST reject invalid tolerance types with TypeError and negative, non-finite, or unrepresentable tolerance values with ValueError.
 
 Zero tolerance values MUST be accepted.
 
@@ -524,6 +528,46 @@ The evaluation MUST distinguish between:
 - Functional failures.
 - Numerical precision failures.
 - Runtime and infrastructure failures.
+
+#### Runtime Availability
+
+After a successful module import, the evaluation framework MUST verify that a module-level `calculate_average` name exists and refers to a callable object.
+
+If the name is missing or refers to a non-callable object, the run MUST be classified as `Fail` with outcome category `wrong_signature`.
+
+Runtime availability validation is performed separately from static validation of the function signature and type annotations defined in this specification.
+
+A module import failure MUST be classified according to the general run classification rules and MUST NOT be reported as a runtime availability failure.
+
+#### AC10: Input Immutability Evaluation
+
+AC10 MUST be evaluated across all applicable test cases used for functional evaluation.
+
+For each applicable test case, the evaluation framework MUST verify that the original input list remains unchanged after execution, regardless of whether the function returns successfully or raises an exception.
+
+AC10 receives `Pass` only if the input list remains unchanged in every applicable test case.
+
+If the input list is modified in at least one applicable test case, AC10 receives `Fail`.
+
+If no applicable test case can be executed or evaluated, AC10 receives `Not Evaluated`.
+
+#### AC12: Documentation Rubric
+
+The generated function's docstring is evaluated using the following rubric.
+
+| Criterion | Points | Description |
+|---|---:|---|
+| Purpose | 1 | Clearly describes that the function calculates the arithmetic mean of the supplied numbers. |
+| Input and return behavior | 1 | Describes the expected input and the returned arithmetic mean. |
+| Error handling and numerical behavior | 1 | Documents relevant validation rules, exceptions, or numerical edge cases defined in this specification. |
+
+The maximum score is 3 points.
+
+AC12 receives `Pass` when the score is at least 2 points. Otherwise, AC12 receives `Fail`.
+
+The third point is optional and provides additional credit for more complete documentation.
+
+The docstring MUST accurately describe the implemented behavior. Incorrect or misleading documentation MUST NOT receive points for the affected criterion.
 
 ### 8.4 Execution Safety
 

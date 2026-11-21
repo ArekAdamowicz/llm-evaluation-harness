@@ -36,7 +36,7 @@ PROMPTS = {
         "- Include a descriptive docstring explaining the function's purpose, accepted inputs, return value, and possible exceptions.\n"
         "- The implementation must satisfy all requirements without relying on a specific numerical summation algorithm.\n"
     ),
-        "1.2": (
+    "1.2": (
         "Write a Python function named calculate_average(numbers: list[float]) -> float "
         "that calculates the arithmetic mean of the numbers in the input list.\n"
         "\n"
@@ -81,9 +81,7 @@ def main() -> None:
 
     prompt = PROMPTS[args.version]
 
-    path = Path(
-        f"docs/test-cases/prompts/CG-001_v{args.version}.txt"
-    )
+    path = Path(f"docs/test-cases/prompts/CG-001_v{args.version}.txt")
     path.parent.mkdir(parents=True, exist_ok=True)
 
     path.write_bytes(prompt.encode("utf-8"))

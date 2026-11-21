@@ -33,15 +33,17 @@ def _validate_path_segment(value: Any, field_name: str) -> str:
         The validated value (unchanged)
 
     Raises:
-        ValueError: If value is invalid
+        TypeError: If value is not a string.
+        ValueError: If field_name is unknown or value is not a safe
+            path segment.
     """
     # Check if field_name is known
     if field_name not in _PATH_SEGMENT_LIMITS:
         raise ValueError(f"Unknown field name: {field_name}")
 
-    # Type check. ValueError is intentional: all invalid path segments share one validation contract.
+    # Type check
     if not isinstance(value, str):
-        raise ValueError(f"Invalid {field_name}: must be a string")  # noqa: TRY004
+        raise TypeError(f"Invalid {field_name}: must be a string")
 
     # Empty check
     if not value:
@@ -73,6 +75,19 @@ def _validate_path_segment(value: Any, field_name: str) -> str:
             f"Invalid {field_name}: contains characters not allowed on Windows"
         )
 
+    # Windows reserved device names (also before an extension)
+    reserved_names = {
+        "CON",
+        "PRN",
+        "AUX",
+        "NUL",
+        *(f"COM{i}" for i in range(1, 10)),
+        *(f"LPT{i}" for i in range(1, 10)),
+    }
+
+    if value.split(".", maxsplit=1)[0].upper() in reserved_names:
+        raise ValueError(f"Invalid {field_name}: reserved Windows device name")
+
     # Trailing dot check (Windows restriction)
     if value.endswith("."):
         raise ValueError(f"Invalid {field_name}: cannot end with a dot")
@@ -92,6 +107,11 @@ def _validate_path_segment(value: Any, field_name: str) -> str:
         )
 
     return value
+
+
+def _validate_task_category(task_category: str) -> str:
+    """Validate task_category as a safe path segment."""
+    return _validate_path_segment(task_category, "task_category")
 
 
 def build_run_document(
@@ -157,12 +177,14 @@ def save_run(
         Path to the saved file.
 
     Raises:
-        ValueError: If run_id mismatch, JSON serialization fails, or path segments are invalid.
-        OSError: If file operations fail.
+        TypeError: If run_id, dataset_id, or task_category is not a string.
+        ValueError: If an identifier is not a safe path segment, if any result
+            has a different run_id than the run, or if JSON serialization fails.
+        OSError: If filesystem operations fail.
     """
     # Validate all path segments FIRST (before any other operations)
     if task_category is not None:
-        task_category = _validate_path_segment(task_category, "task_category")
+        task_category = _validate_task_category(task_category)
 
     dataset_id = _validate_path_segment(run.dataset_id, "dataset_id")
     run_id = _validate_path_segment(run.run_id, "run_id")

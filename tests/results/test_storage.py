@@ -507,25 +507,31 @@ class TestValidatePathSegment:
             "COM9",
             "LPT1",
             "LPT9",
+            "con.txt",
+            "nul.json",
+            "lpt3",
+            "prn.txt",
         ],
     )
-    def test_accepts_windows_reserved_names(self, value):
-        """Windows reserved names are not rejected by this helper."""
-        assert _validate_path_segment(value, "dataset_id") == value
+    def test_rejects_windows_reserved_names(self, value):
+        """Windows reserved device names should be rejected."""
+        with pytest.raises(ValueError, match="reserved Windows device name"):
+            _validate_path_segment(value, "dataset_id")
 
     @pytest.mark.parametrize(
         "value,field_name,expected_message",
         [
-            # Invalid types
-            (None, "dataset_id", "must be a string"),
-            (123, "dataset_id", "must be a string"),
-            ([], "dataset_id", "must be a string"),
             # Empty and whitespace-only values
             ("", "dataset_id", "cannot be empty"),
             (" ", "dataset_id", "cannot have leading or trailing whitespace"),
             (" test", "dataset_id", "cannot have leading or trailing whitespace"),
             ("test ", "dataset_id", "cannot have leading or trailing whitespace"),
             ("\ttest", "dataset_id", "cannot have leading or trailing whitespace"),
+            ("\t", "dataset_id", "cannot have leading or trailing whitespace"),
+            ("\n", "dataset_id", "cannot have leading or trailing whitespace"),
+            ("   ", "dataset_id", "cannot have leading or trailing whitespace"),
+            # Leading / trailing whitespace
+            ("dataset\n", "dataset_id", "cannot have leading or trailing whitespace"),
             # Dot-only path segments
             (".", "dataset_id", "cannot be '.' or '..'"),
             ("..", "dataset_id", "cannot be '.' or '..'"),
@@ -538,6 +544,9 @@ class TestValidatePathSegment:
             ("foo\nbar", "dataset_id", "contains control characters"),
             ("foo\rbar", "dataset_id", "contains control characters"),
             ("foo\x85bar", "dataset_id", "contains control characters"),
+            ("foo\x1fbar", "dataset_id", "contains control characters"),
+            ("foo\x7fbar", "dataset_id", "contains control characters"),
+            ("foo\x80bar", "dataset_id", "contains control characters"),
             # Characters forbidden on Windows
             ("foo<bar", "dataset_id", "contains characters not allowed on Windows"),
             ("foo>bar", "dataset_id", "contains characters not allowed on Windows"),
@@ -548,14 +557,26 @@ class TestValidatePathSegment:
             ("foo*bar", "dataset_id", "contains characters not allowed on Windows"),
             # Trailing dot
             ("dataset.", "dataset_id", "cannot end with a dot"),
+            ("dataset..", "dataset_id", "cannot end with a dot"),
             # Invalid Unicode: lone surrogate cannot be encoded as UTF-8
             ("\ud800", "dataset_id", "contains invalid Unicode"),
+            ("CON", "dataset_id", "reserved Windows device name"),
+            ("con.txt", "dataset_id", "reserved Windows device name"),
+            ("NUL.json", "dataset_id", "reserved Windows device name"),
+            ("COM1", "dataset_id", "reserved Windows device name"),
+            ("lpt9.log", "dataset_id", "reserved Windows device name"),
+            ("\x9f", "dataset_id", "control characters"),
         ],
     )
     def test_rejects_invalid_values(self, value, field_name, expected_message):
         """Invalid values should raise ValueError with a useful message."""
         with pytest.raises(ValueError, match=re.escape(expected_message)):
             _validate_path_segment(value, field_name)
+
+    @pytest.mark.parametrize("field_name", ["dataset_id", "run_id", "task_category"])
+    def test_error_message_identifies_field(self, field_name):
+        with pytest.raises(ValueError, match=re.escape(f"Invalid {field_name}")):
+            _validate_path_segment("a/b", field_name)
 
     def test_rejects_unknown_field_name(self):
         """Unknown field names should raise an explicit ValueError."""
@@ -596,3 +617,101 @@ class TestValidatePathSegment:
 
         assert result == value
         assert result is value
+
+    def test_validate_task_category_returns_original_value(self):
+        """Valid task_category should be returned unchanged."""
+        value = "code-generation"
+
+        result = storage._validate_task_category(value)
+
+        assert result == value
+        assert result is value
+
+    def test_validate_task_category_rejects_invalid_value(self):
+        """Invalid task_category should raise ValueError."""
+        with pytest.raises(ValueError, match="contains path separator"):
+            storage._validate_task_category("code/generation")
+
+    @pytest.mark.parametrize("value", [None, 123, [], 1.5])
+    @pytest.mark.parametrize("field_name", ["dataset_id", "run_id", "task_category"])
+    def test_rejects_non_string_values(self, value, field_name):
+        with pytest.raises(
+            TypeError,
+            match=re.escape(f"Invalid {field_name}: must be a string"),
+        ):
+            _validate_path_segment(value, field_name)
+
+
+class TestSaveRunIdentifierValidation:
+    def _run_and_result(self, run_id, dataset_id):
+        run = EvaluationRun(run_id=run_id, dataset_id=dataset_id)
+        result = TestResult(run_id=run.run_id, status=TestStatus.PASS)
+        return run, [result]
+
+    def test_invalid_dataset_id_creates_nothing(self, tmp_path):
+        run, results = self._run_and_result("run-123", "bad/id")
+
+        with pytest.raises(ValueError, match="dataset_id"):
+            save_run(run, results, tmp_path)
+
+        assert list(tmp_path.iterdir()) == []
+
+    def test_invalid_run_id_creates_nothing(self, tmp_path):
+        run, results = self._run_and_result("bad/id", "CG-001")
+
+        with pytest.raises(ValueError, match="run_id"):
+            save_run(run, results, tmp_path)
+
+        assert list(tmp_path.iterdir()) == []
+
+    def test_invalid_task_category_creates_nothing(self, tmp_path):
+        run, results = self._run_and_result("run-123", "CG-001")
+
+        with pytest.raises(ValueError, match="task_category"):
+            save_run(run, results, tmp_path, task_category="bad/category")
+
+        assert list(tmp_path.iterdir()) == []
+
+    def test_non_string_dataset_id_raises_type_error_and_creates_nothing(
+        self, tmp_path
+    ):
+        run = EvaluationRun(run_id="run-123", dataset_id=123)
+        result = TestResult(run_id=run.run_id, status=TestStatus.PASS)
+
+        with pytest.raises(
+            TypeError, match=re.escape("Invalid dataset_id: must be a string")
+        ):
+            save_run(run, [result], tmp_path)
+
+        assert list(tmp_path.iterdir()) == []
+
+    def test_non_string_run_id_raises_type_error_and_creates_nothing(self, tmp_path):
+        run = EvaluationRun(run_id=123, dataset_id="CG-001")
+        result = TestResult(run_id=run.run_id, status=TestStatus.PASS)
+
+        with pytest.raises(
+            TypeError, match=re.escape("Invalid run_id: must be a string")
+        ):
+            save_run(run, [result], tmp_path)
+
+        assert list(tmp_path.iterdir()) == []
+
+    def test_non_string_task_category_raises_type_error_and_creates_nothing(
+        self, tmp_path
+    ):
+        run, results = self._run_and_result("run-123", "CG-001")
+
+        with pytest.raises(
+            TypeError, match=re.escape("Invalid task_category: must be a string")
+        ):
+            save_run(run, results, tmp_path, task_category=123)
+
+        assert list(tmp_path.iterdir()) == []
+
+    def test_valid_identifiers_with_dots_and_hyphens(self, tmp_path):
+        run, results = self._run_and_result("run-123", "CG.001.v2")
+
+        path = save_run(run, results, tmp_path)
+
+        assert path.exists()
+        assert path.parent == tmp_path / "CG.001.v2"

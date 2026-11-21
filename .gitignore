@@ -35,3 +35,6 @@ Thumbs.db
 # Build artifacts
 build/
 dist/
+
+# Code review
+review_packet.md
