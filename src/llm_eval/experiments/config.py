@@ -81,45 +81,64 @@ def _validate_finite_number(
 
 @dataclass(frozen=True)
 class ExecutionConfig:
-    """Configuration for executing generated code.
+    """Configuration controlling code execution.
 
-    The subprocess execution mode provides process isolation and timeout
-    handling, but it is NOT a secure sandbox. It does not protect against
-    filesystem access, network access, environment variable exposure,
-    or privilege escalation.
+    The global timeout applies to the entire execution.
+    Phase-specific timeouts optionally limit importing and function calls.
+    A phase timeout of None means that only the global timeout applies.
 
-    Use a properly configured Docker-based execution engine when running
+    The subprocess execution mode is not a secure sandbox. It does not
+    protect the filesystem, network, environment variables, or against
+    privilege escalation. Docker should be considered for executing
     untrusted code in production environments.
     """
 
     timeout_seconds: float = 10.0
+    import_timeout_seconds: float | None = None
+    call_timeout_seconds: float | None = None
     memory_limit_mb: int | None = None
     sandbox_type: str = "subprocess"
 
     def __post_init__(self) -> None:
-        _validate_finite_number(
-            self.timeout_seconds,
+        for field_name in (
             "timeout_seconds",
-            minimum=0,
-            exclusive_minimum=True,
-        )
+            "import_timeout_seconds",
+            "call_timeout_seconds",
+        ):
+            value = getattr(self, field_name)
+
+            if field_name != "timeout_seconds" and value is None:
+                continue
+
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                raise TypeError(f"{field_name} must be a finite positive number")
+
+            try:
+                is_finite = math.isfinite(value)
+            except OverflowError:
+                is_finite = False
+
+            if not is_finite:
+                raise ValueError(f"{field_name} must be a finite positive number")
+
+            if value <= 0:
+                raise ValueError(f"{field_name} must be a finite positive number")
 
         if self.memory_limit_mb is not None:
             if isinstance(self.memory_limit_mb, bool) or not isinstance(
                 self.memory_limit_mb, int
             ):
-                raise TypeError("memory_limit_mb must be an integer or None")
+                raise TypeError("memory_limit_mb must be a positive integer or None")
 
             if self.memory_limit_mb <= 0:
-                raise ValueError("memory_limit_mb must be greater than 0")
+                raise ValueError("memory_limit_mb must be a positive integer or None")
 
         if not isinstance(self.sandbox_type, str):
             raise TypeError("sandbox_type must be a string")
 
-        allowed_sandbox_types = {"subprocess", "docker", "none"}
-        if self.sandbox_type not in allowed_sandbox_types:
+        if self.sandbox_type not in {"subprocess", "docker", "none"}:
             raise ValueError(
-                f"sandbox_type must be one of {sorted(allowed_sandbox_types)}"
+                "sandbox_type must be one of: 'subprocess', 'docker', 'none'"
             )
 
 
