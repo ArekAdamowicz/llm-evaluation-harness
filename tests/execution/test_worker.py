@@ -885,7 +885,7 @@ class TestTimerRaces:
 
         elapsed = time.perf_counter() - started
 
-        assert elapsed >= 0.05
+        assert elapsed >= worker.WRITE_GRACE_SECONDS - 0.01
         assert recorded == [70]
         assert not worker._write_finished.is_set()
 
