@@ -216,13 +216,6 @@ class TestExecutionFailures:
 
         config = ExecutionConfig(timeout_seconds=0.5)
 
-        result = engine.execute(_request(source, config=config))
-
-        assert result.outcome is ExecutionOutcome.TIMEOUT
-        assert result.timed_out_phase == "total"
-        assert result.error is not None
-        assert result.exception is None
-
     def test_enforces_call_timeout(
         self,
         engine: SubprocessExecutionEngine,

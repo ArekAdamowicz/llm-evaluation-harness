@@ -20,8 +20,6 @@ from llm_eval.execution.models import (
 from llm_eval.results.models import ErrorInfo, ExceptionInfo
 
 PROTOCOL_VERSION = "1.0"
-MAX_OUTPUT_BYTES = (64 * 1024) + 128
-TRUNCATION_MARKER = "\n[truncated]"
 
 
 def _thaw_json_value(value: Any) -> Any:
