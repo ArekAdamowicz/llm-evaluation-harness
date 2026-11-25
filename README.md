@@ -34,7 +34,6 @@ It is designed as a hands-on QA portfolio project, combining traditional softwar
 
 - Python
 - pytest
-- Jupyter Notebook
 - Git and GitHub
 
 Additional tools and libraries will be introduced as the project evolves.
