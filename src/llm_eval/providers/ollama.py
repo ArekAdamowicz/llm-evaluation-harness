@@ -4,8 +4,14 @@ import json
 import math
 import urllib.request
 from dataclasses import dataclass
+from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 
+from llm_eval.providers.exceptions import (
+    ProviderConnectionError,
+    ProviderHTTPError,
+    ProviderTimeoutError,
+)
 from llm_eval.providers.models import ModelResponse
 
 
@@ -154,10 +160,25 @@ class OllamaProvider:
             method="POST",
         )
 
-        with urllib.request.urlopen(
-            request,
-            timeout=self.config.timeout_seconds,
-        ) as response:
-            response.read()
+        try:
+            with urllib.request.urlopen(
+                request,
+                timeout=self.config.timeout_seconds,
+            ) as response:
+                response.read()
+        except HTTPError as exc:
+            raise ProviderHTTPError(
+                str(exc),
+                status_code=exc.code,
+            ) from exc
+        except TimeoutError as exc:
+            raise ProviderTimeoutError(str(exc)) from exc
+        except URLError as exc:
+            if isinstance(exc.reason, TimeoutError):
+                raise ProviderTimeoutError(str(exc)) from exc
+
+            raise ProviderConnectionError(str(exc)) from exc
+        except OSError as exc:
+            raise ProviderConnectionError(str(exc)) from exc
 
         raise NotImplementedError

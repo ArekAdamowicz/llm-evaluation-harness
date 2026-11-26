@@ -23,3 +23,19 @@ class AmbiguousResponseError(ProviderError):
 
 class InvalidFixtureError(ProviderError):
     """Raised when a provider fixture is invalid."""
+
+
+class ProviderHTTPError(ProviderError):
+    """Raised when the provider responds with an HTTP error status code."""
+
+    def __init__(self, message: str, *, status_code: int) -> None:
+        super().__init__(message)
+        self.status_code = status_code
+
+
+class ProviderConnectionError(ProviderError):
+    """Raised when a connection to the provider cannot be established."""
+
+
+class ProviderTimeoutError(ProviderError):
+    """Raised when the provider does not respond within the configured timeout."""

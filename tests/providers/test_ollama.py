@@ -3,9 +3,15 @@
 import json
 from dataclasses import FrozenInstanceError
 from unittest.mock import MagicMock, patch
+from urllib.error import HTTPError, URLError
 
 import pytest
 
+from llm_eval.providers.exceptions import (
+    ProviderConnectionError,
+    ProviderHTTPError,
+    ProviderTimeoutError,
+)
 from llm_eval.providers.ollama import OllamaProvider, OllamaProviderConfig
 
 
@@ -387,3 +393,79 @@ class TestOllamaProviderRequestBuilding:
                 "temperature": 0.2,
             },
         }
+
+
+class TestOllamaProviderHTTPError:
+    @patch("urllib.request.urlopen")
+    def test_maps_http_error_to_provider_http_error(self, mock_urlopen):
+        http_error = HTTPError(
+            url="http://localhost:11434/api/generate",
+            code=404,
+            msg="Not Found",
+            hdrs=None,
+            fp=None,
+        )
+        mock_urlopen.side_effect = http_error
+
+        provider = OllamaProvider(OllamaProviderConfig(model="llama3.2:3b"))
+
+        with pytest.raises(ProviderHTTPError) as exc_info:
+            provider.generate_response("What is Python?")
+
+        assert exc_info.value.status_code == 404
+        assert exc_info.value.__cause__ is http_error
+
+
+class TestOllamaProviderConnectionError:
+    @patch("urllib.request.urlopen")
+    def test_maps_url_error_to_provider_connection_error(self, mock_urlopen):
+        connection_error = URLError("Connection refused")
+        mock_urlopen.side_effect = connection_error
+
+        provider = OllamaProvider(OllamaProviderConfig(model="llama3.2:3b"))
+
+        with pytest.raises(ProviderConnectionError) as exc_info:
+            provider.generate_response("What is Python?")
+
+        assert exc_info.value.__cause__ is connection_error
+
+    @patch("urllib.request.urlopen")
+    def test_maps_os_error_to_provider_connection_error(self, mock_urlopen):
+        os_error = OSError("Network is unreachable")
+        mock_urlopen.side_effect = os_error
+
+        provider = OllamaProvider(OllamaProviderConfig(model="llama3.2:3b"))
+
+        with pytest.raises(ProviderConnectionError) as exc_info:
+            provider.generate_response("What is Python?")
+
+        assert exc_info.value.__cause__ is os_error
+
+
+class TestOllamaProviderTimeoutError:
+    @patch("urllib.request.urlopen")
+    def test_maps_timeout_to_provider_timeout_error(self, mock_urlopen):
+        timeout_error = TimeoutError("Connection timed out")
+        mock_urlopen.side_effect = timeout_error
+
+        provider = OllamaProvider(OllamaProviderConfig(model="llama3.2:3b"))
+
+        with pytest.raises(ProviderTimeoutError) as exc_info:
+            provider.generate_response("What is Python?")
+
+        assert exc_info.value.__cause__ is timeout_error
+
+    @patch("urllib.request.urlopen")
+    def test_maps_url_error_with_timeout_reason_to_provider_timeout_error(
+        self, mock_urlopen
+    ):
+        timeout_error = TimeoutError("Connection timed out")
+        url_error = URLError(timeout_error)
+        mock_urlopen.side_effect = url_error
+
+        provider = OllamaProvider(OllamaProviderConfig(model="llama3.2:3b"))
+
+        with pytest.raises(ProviderTimeoutError) as exc_info:
+            provider.generate_response("What is Python?")
+
+        assert exc_info.value.__cause__ is url_error
