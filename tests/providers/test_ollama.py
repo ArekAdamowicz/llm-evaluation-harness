@@ -1,10 +1,12 @@
 """Tests for Ollama provider configuration."""
 
+import json
 from dataclasses import FrozenInstanceError
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-from llm_eval.providers.ollama import OllamaProviderConfig
+from llm_eval.providers.ollama import OllamaProvider, OllamaProviderConfig
 
 
 class TestOllamaProviderConfigDefaults:
@@ -273,3 +275,115 @@ class TestOllamaProviderConfigSeed:
         )
 
         assert config.seed is None
+
+
+MOCK_OLLAMA_SUCCESS_RESPONSE = {
+    "model": "llama3.2:3b",
+    "created_at": "2023-11-26T10:00:00Z",
+    "response": "Mocked response text",
+    "done": True,
+    "prompt_eval_count": 10,
+    "eval_count": 5,
+}
+
+
+def _create_mock_urlopen_response(response_data=None):
+    """Create a mock context-manager response from urllib."""
+
+    if response_data is None:
+        response_data = MOCK_OLLAMA_SUCCESS_RESPONSE
+
+    response = MagicMock()
+    response.read.return_value = json.dumps(response_data).encode("utf-8")
+    response.__enter__.return_value = response
+    response.__exit__.return_value = None
+
+    return response
+
+
+class TestOllamaProviderRequestBuilding:
+    @patch("urllib.request.urlopen")
+    def test_sends_minimal_generate_request(self, mock_urlopen):
+        mock_urlopen.return_value = _create_mock_urlopen_response()
+
+        config = OllamaProviderConfig(model="llama3.2:3b")
+        provider = OllamaProvider(config)
+
+        with pytest.raises(NotImplementedError):
+            provider.generate_response("What is Python?")
+
+        mock_urlopen.assert_called_once()
+
+        request = mock_urlopen.call_args.args[0]
+        timeout = mock_urlopen.call_args.kwargs["timeout"]
+
+        assert request.full_url == "http://localhost:11434/api/generate"
+        assert request.get_method() == "POST"
+        assert request.get_header("Content-type") == "application/json"
+        assert timeout == 300.0
+
+        payload = json.loads(request.data.decode("utf-8"))
+
+        assert payload == {
+            "model": "llama3.2:3b",
+            "prompt": "What is Python?",
+            "stream": False,
+        }
+
+    @patch("urllib.request.urlopen")
+    def test_includes_all_configured_options(self, mock_urlopen):
+        mock_urlopen.return_value = _create_mock_urlopen_response()
+
+        config = OllamaProviderConfig(
+            model="llama3.2:3b",
+            temperature=0.7,
+            top_p=0.9,
+            seed=42,
+        )
+        provider = OllamaProvider(config)
+
+        with pytest.raises(NotImplementedError):
+            provider.generate_response("Explain Python.")
+
+        mock_urlopen.assert_called_once()
+
+        request = mock_urlopen.call_args.args[0]
+        payload = json.loads(request.data.decode("utf-8"))
+
+        assert payload == {
+            "model": "llama3.2:3b",
+            "prompt": "Explain Python.",
+            "stream": False,
+            "options": {
+                "temperature": 0.7,
+                "top_p": 0.9,
+                "seed": 42,
+            },
+        }
+
+    @patch("urllib.request.urlopen")
+    def test_includes_only_configured_options(self, mock_urlopen):
+        mock_urlopen.return_value = _create_mock_urlopen_response()
+
+        config = OllamaProviderConfig(
+            model="llama3.2:3b",
+            temperature=0.2,
+        )
+        provider = OllamaProvider(config)
+
+        with pytest.raises(NotImplementedError):
+            provider.generate_response("Explain Python.")
+
+        mock_urlopen.assert_called_once()
+
+        request = mock_urlopen.call_args.args[0]
+        payload = json.loads(request.data.decode("utf-8"))
+
+        assert payload == {
+            "model": "llama3.2:3b",
+            "prompt": "Explain Python.",
+            "stream": False,
+            "options": {
+                "temperature": 0.2,
+            },
+        }

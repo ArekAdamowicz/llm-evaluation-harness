@@ -1,8 +1,12 @@
-"""Configuration for the Ollama provider."""
+"""Configuration and implementation for the Ollama provider."""
 
+import json
 import math
+import urllib.request
 from dataclasses import dataclass
 from urllib.parse import urlsplit
+
+from llm_eval.providers.models import ModelResponse
 
 
 def _validate_finite_number(
@@ -111,3 +115,49 @@ class OllamaProviderConfig:
             isinstance(self.seed, bool) or not isinstance(self.seed, int)
         ):
             raise TypeError("seed must be an integer or None")
+
+
+class OllamaProvider:
+    """Provider implementation for local Ollama models."""
+
+    def __init__(self, config: OllamaProviderConfig) -> None:
+        """Initialize the provider with its configuration."""
+
+        self.config = config
+
+    def generate_response(self, prompt: str) -> ModelResponse:
+        """Generate a response using the configured Ollama model."""
+
+        payload = {
+            "model": self.config.model,
+            "prompt": prompt,
+            "stream": False,
+        }
+
+        options = {
+            key: value
+            for key, value in {
+                "temperature": self.config.temperature,
+                "top_p": self.config.top_p,
+                "seed": self.config.seed,
+            }.items()
+            if value is not None
+        }
+
+        if options:
+            payload["options"] = options
+
+        request = urllib.request.Request(
+            url=f"{self.config.base_url}/api/generate",
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+
+        with urllib.request.urlopen(
+            request,
+            timeout=self.config.timeout_seconds,
+        ) as response:
+            response.read()
+
+        raise NotImplementedError
