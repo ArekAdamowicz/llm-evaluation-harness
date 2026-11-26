@@ -86,6 +86,8 @@ class TestOllamaProviderConfigBaseUrl:
             "http://user:pass@localhost:11434",
             "http://localhost:11434?foo=bar",
             "http://localhost:11434#fragment",
+            "http://localhost:11434?",
+            "http://localhost:11434#",
         ],
     )
     def test_rejects_invalid_base_url(self, base_url):

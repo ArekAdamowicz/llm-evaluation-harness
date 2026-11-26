@@ -49,7 +49,7 @@ def _validate_base_url(value: object) -> str:
         if parsed.username is not None or parsed.password is not None:
             raise ValueError("base_url must not contain credentials")
 
-        if parsed.query or parsed.fragment:
+        if "?" in value or "#" in value:
             raise ValueError("base_url must not contain a query or fragment")
 
     except ValueError as error:
